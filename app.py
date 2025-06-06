@@ -150,381 +150,220 @@ with st.sidebar:
                     drivers = st.session_state.fetcher.get_driver_list()
                     st.session_state.available_drivers = drivers
                     st.success("Connected to live session!")
-                else:
-                    st.error("Failed to connect")
 
 # Main content area
 col1, col2 = st.columns([1, 3])
 
 with col1:
-    st.subheader("🏁 Driver Selection")
+    st.header("🏁 Driver Selection")
     
-    # Check if we have drivers loaded
-    if 'available_drivers' in st.session_state and st.session_state.available_drivers:
-        drivers = sorted(st.session_state.available_drivers)
-        
-        # Driver selection
-        driver1 = st.selectbox(
-            "Driver 1", 
-            drivers, 
-            index=0,
-            help="Select the first driver to track"
-        )
-        
-        driver2 = st.selectbox(
-            "Driver 2", 
-            drivers, 
-            index=1 if len(drivers) > 1 else 0,
-            help="Select the second driver to compare"
-        )
-        
-        # Get driver numbers
-        if driver1 != driver2:
-            driver1_num = st.session_state.fetcher.driver_numbers.get(driver1, 0)
-            driver2_num = st.session_state.fetcher.driver_numbers.get(driver2, 0)
-            st.session_state.driver1_num = driver1_num
-            st.session_state.driver2_num = driver2_num
-        
-        st.divider()
-        
-        # Control buttons
-        col_start, col_stop = st.columns(2)
-        
-        with col_start:
-            if st.button("▶️ Start", type="primary", disabled=st.session_state.is_tracking):
-                if driver1 != driver2:
-                    st.session_state.is_tracking = True
-                    st.session_state.interval_history = pd.DataFrame()
-                else:
-                    st.warning("Please select different drivers")
-        
-        with col_stop:
-            if st.button("⏹️ Stop", disabled=not st.session_state.is_tracking):
-                st.session_state.is_tracking = False
-        
-        st.divider()
-        
-        # Current status display
-        if st.session_state.is_tracking and 'driver1_num' in st.session_state:
-            current_stats = st.session_state.calculator.get_current_interval(
-                st.session_state.driver1_num,
-                st.session_state.driver2_num
+    if st.session_state.selected_session:
+        # Get available drivers
+        if 'available_drivers' in st.session_state and st.session_state.available_drivers:
+            driver1 = st.selectbox(
+                "Driver 1",
+                st.session_state.available_drivers,
+                key="driver1_select"
             )
             
-            if current_stats['current_interval'] is not None:
-                interval = current_stats['current_interval']
-                trend = current_stats['trend']
+            driver2 = st.selectbox(
+                "Driver 2",
+                [d for d in st.session_state.available_drivers if d != driver1],
+                key="driver2_select"
+            )
+            
+            st.divider()
+            
+            # Control buttons
+            col_start, col_stop = st.columns(2)
+            
+            with col_start:
+                if st.button("▶️ Start", type="primary", disabled=st.session_state.is_tracking):
+                    st.session_state.is_tracking = True
+                    st.session_state.interval_history = pd.DataFrame()
+                    
+            with col_stop:
+                if st.button("⏹️ Stop", disabled=not st.session_state.is_tracking):
+                    st.session_state.is_tracking = False
+            
+            # Display current stats
+            st.divider()
+            if st.session_state.is_tracking and not st.session_state.interval_history.empty:
+                # Get driver numbers
+                d1_num = st.session_state.fetcher.driver_numbers.get(driver1, 0)
+                d2_num = st.session_state.fetcher.driver_numbers.get(driver2, 0)
                 
-                # Format interval display
-                if interval > 0:
-                    interval_str = f"+{interval:.3f}s"
-                    delta_color = "normal"
-                elif interval < 0:
-                    interval_str = f"{interval:.3f}s"
-                    delta_color = "inverse"
-                else:
-                    interval_str = "0.000s"
-                    delta_color = "off"
+                # Get current stats
+                current_stats = st.session_state.calculator.get_current_interval(d1_num, d2_num)
                 
-                # Trend indicator
-                if trend == 'closing':
-                    trend_str = "↘️ Closing"
-                elif trend == 'extending':
-                    trend_str = "↗️ Extending"
-                else:
-                    trend_str = "→ Stable"
-                
+                # Display metrics
                 st.metric(
                     "Current Gap",
-                    interval_str,
-                    delta=f"{current_stats['closing_rate']:.3f}s/lap" if current_stats['closing_rate'] else None,
-                    delta_color=delta_color
+                    f"{abs(current_stats['current_interval']):.3f}s" if current_stats['current_interval'] else "---",
+                    f"{current_stats['closing_rate']:.3f}s/lap" if current_stats['closing_rate'] else None
                 )
                 
-                st.caption(f"Lap {current_stats['lap']} • {trend_str}")
+                # Show who's ahead
+                if current_stats['current_interval']:
+                    if current_stats['current_interval'] > 0:
+                        st.caption(f"🟢 {driver1} ahead")
+                    else:
+                        st.caption(f"🔴 {driver2} ahead")
                 
-                # Position info
+                # Show positions
                 st.caption(f"P{current_stats['position_d1']} vs P{current_stats['position_d2']}")
-            else:
-                st.info("Waiting for data...")
-                
-        # Recording controls
-        if data_source == "Live Session" and st.session_state.is_tracking:
-            st.divider()
-            if st.button("💾 Save Recording"):
-                session_name = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                recorder = SessionRecorder(session_name)
-                
-                # Save current data
-                recorder.set_drivers(st.session_state.fetcher.drivers)
-                recorder.add_lap_data(st.session_state.calculator.lap_data)
-                recorder.add_position_data(st.session_state.calculator.position_data)
-                recorder.save()
-                
-                st.success(f"Saved as {session_name}")
-    
+        else:
+            st.info("Load a session to see drivers")
     else:
         st.info("Please load a session first")
 
 with col2:
-    if 'available_drivers' in st.session_state and st.session_state.available_drivers:
-        st.subheader(f"📈 Interval: {driver1} vs {driver2}")
+    st.header("📈 Interval Analysis")
+    
+    # Create placeholder for the plot
+    plot_container = st.empty()
+    
+    # Info container
+    info_container = st.container()
+    
+    if st.session_state.selected_session and 'driver1_select' in st.session_state:
+        # Initial empty plot
+        fig = go.Figure()
         
-        # Create the plot
-        plot_placeholder = st.empty()
+        # Configure the plot
+        fig.update_layout(
+            title=f"Gap: {st.session_state.get('driver1_select', 'Driver 1')} vs {st.session_state.get('driver2_select', 'Driver 2')}",
+            xaxis_title="Lap",
+            yaxis_title="Gap (seconds)",
+            height=PLOT_HEIGHT,
+            template=PLOT_TEMPLATE,
+            hovermode='x unified',
+            showlegend=True
+        )
         
-        # Information tabs
-        tab1, tab2, tab3 = st.tabs(["Live Plot", "Statistics", "Events"])
+        # Add zero line
+        fig.add_hline(y=0, line_dash="dash", line_color=ZERO_LINE_COLOR, opacity=0.7)
         
-        with tab1:
-            # Plot controls
-            col_controls1, col_controls2, col_controls3 = st.columns(3)
-            with col_controls1:
-                show_trend = st.checkbox("Show Trend Line", value=True)
-            with col_controls2:
-                show_events = st.checkbox("Show Events", value=False)
-            with col_controls3:
-                auto_scale = st.checkbox("Auto Scale", value=True)
+        # Add annotations
+        fig.add_annotation(
+            text="↑ Driver 1 ahead<br>↓ Driver 2 ahead",
+            xref="paper", yref="paper",
+            x=1, y=1,
+            showarrow=False,
+            font=dict(size=12),
+            bgcolor="rgba(255,255,255,0.8)",
+            bordercolor="gray",
+            borderwidth=1
+        )
         
-        with tab2:
-            stats_placeholder = st.empty()
+        plot_container.plotly_chart(fig, use_container_width=True)
         
-        with tab3:
-            events_placeholder = st.empty()
-        
-        # Main update loop
+        # Run tracking loop
         if st.session_state.is_tracking:
-            # Create containers for live updates
+            # Get driver numbers
+            d1_num = st.session_state.fetcher.driver_numbers.get(st.session_state.driver1_select, 0)
+            d2_num = st.session_state.fetcher.driver_numbers.get(st.session_state.driver2_select, 0)
+            
+            # Create a placeholder for updates
+            with info_container:
+                status_placeholder = st.empty()
+                status_placeholder.info("🔄 Tracking active...")
+            
+            # Continuous update loop
             while st.session_state.is_tracking:
                 try:
-                    # Update data based on source
+                    # Fetch latest data based on source
                     if data_source == "Historical Session":
-                        # For historical, we already have all data loaded
-                        history = st.session_state.calculator.calculate_interval_history(
-                            st.session_state.driver1_num,
-                            st.session_state.driver2_num
-                        )
-                        st.session_state.interval_history = history
-                        
-                    elif data_source == "Recorded Session":
+                        # For historical, load all lap data at once
+                        if st.session_state.interval_history.empty:
+                            lap_data = st.session_state.fetcher.get_lap_data([d1_num, d2_num])
+                            st.session_state.calculator.update_lap_data(lap_data)
+                            
+                            # Calculate full history
+                            history = st.session_state.calculator.calculate_interval_history(d1_num, d2_num)
+                            st.session_state.interval_history = history
+                            
+                            # Update plot with full data
+                            if not history.empty:
+                                fig = go.Figure()
+                                
+                                # Determine colors based on gap
+                                colors = [POSITIVE_COLOR if gap > 0 else NEGATIVE_COLOR 
+                                         for gap in history['interval']]
+                                
+                                fig.add_trace(go.Scatter(
+                                    x=history['lap_number'],
+                                    y=history['interval'],
+                                    mode='lines+markers',
+                                    name='Gap',
+                                    line=dict(width=3),
+                                    marker=dict(size=8, color=colors),
+                                    hovertemplate='Lap %{x}<br>Gap: %{y:.3f}s<extra></extra>'
+                                ))
+                                
+                                # Update layout
+                                fig.update_layout(
+                                    title=f"Gap: {st.session_state.driver1_select} vs {st.session_state.driver2_select}",
+                                    xaxis_title="Lap",
+                                    yaxis_title="Gap (seconds)",
+                                    height=PLOT_HEIGHT,
+                                    template=PLOT_TEMPLATE,
+                                    hovermode='x unified'
+                                )
+                                
+                                # Add zero line
+                                fig.add_hline(y=0, line_dash="dash", line_color=ZERO_LINE_COLOR, opacity=0.7)
+                                
+                                plot_container.plotly_chart(fig, use_container_width=True)
+                                
+                            # For historical data, stop after loading
+                            st.session_state.is_tracking = False
+                            status_placeholder.success("✅ Data loaded!")
+                    
+                    elif data_source == "Recorded Session" and 'recorder' in st.session_state:
                         # Replay recorded data
-                        if 'recorder' in st.session_state:
-                            # This would need to be implemented with proper replay logic
-                            pass
+                        for position_batch in st.session_state.recorder.replay_positions(
+                            speed=st.session_state.get('replay_speed', 1.0)
+                        ):
+                            if not st.session_state.is_tracking:
+                                break
+                                
+                            # Update with batch data
+                            st.session_state.calculator.update_position_data(position_batch)
+                            
+                            # Update plot
+                            # ... (similar plotting logic)
+                            
+                            time.sleep(0.1)  # Small delay for UI updates
                     
-                    else:  # Live Session
-                        # Fetch new data
-                        new_laps = st.session_state.fetcher.get_lap_data(
-                            [st.session_state.driver1_num, st.session_state.driver2_num]
-                        )
-                        st.session_state.calculator.update_lap_data(new_laps)
-                        
-                        history = st.session_state.calculator.calculate_interval_history(
-                            st.session_state.driver1_num,
-                            st.session_state.driver2_num
-                        )
-                        st.session_state.interval_history = history
+                    else:  # Live session
+                        # Stream live data
+                        # ... (implement live streaming)
+                        time.sleep(LIVE_UPDATE_INTERVAL)
                     
-                    # Update plot
-                    if not st.session_state.interval_history.empty:
-                        fig = create_interval_plot(
-                            st.session_state.interval_history,
-                            driver1, driver2,
-                            show_trend, show_events, auto_scale
-                        )
-                        plot_placeholder.plotly_chart(fig, use_container_width=True)
-                        
-                        # Update statistics
-                        with stats_placeholder.container():
-                            display_statistics(st.session_state.interval_history)
-                        
-                        # Update events
-                        with events_placeholder.container():
-                            display_events(
-                                st.session_state.calculator,
-                                st.session_state.driver1_num,
-                                st.session_state.driver2_num
-                            )
-                    
-                    # Update timestamp
+                    # Update last update time
                     st.session_state.last_update = datetime.now()
                     
-                    # Sleep before next update
-                    time.sleep(LIVE_UPDATE_INTERVAL)
-                    
                 except Exception as e:
-                    logger.error(f"Error in update loop: {e}")
-                    st.error(f"Update error: {str(e)}")
-                    time.sleep(LIVE_UPDATE_INTERVAL)
-    
+                    logger.error(f"Error during tracking: {e}")
+                    st.session_state.is_tracking = False
+                    status_placeholder.error(f"❌ Error: {str(e)}")
+                    break
+                
+                # Allow Streamlit to update
+                time.sleep(0.1)
     else:
-        st.info("👈 Please load a session and select drivers to begin tracking")
+        # No session loaded
+        with info_container:
+            st.info("👈 Please load a session and select drivers to begin tracking")
 
 # Footer
 st.divider()
-col_footer1, col_footer2, col_footer3 = st.columns(3)
-
-with col_footer1:
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.caption("📡 Data provided by OpenF1 API")
+with col2:
     if st.session_state.last_update:
-        st.caption(f"Last update: {st.session_state.last_update.strftime('%H:%M:%S')}")
-    else:
-        st.caption("Not tracking")
-
-with col_footer2:
-    st.caption("Data provided by OpenF1 API")
-
-with col_footer3:
+        st.caption(f"🕒 Last update: {st.session_state.last_update.strftime('%H:%M:%S')}")
+with col3:
     st.caption("Built with Streamlit & Plotly")
-
-
-def create_interval_plot(history_df, driver1, driver2, show_trend, show_events, auto_scale):
-    """Create the interval plot with Plotly"""
-    fig = go.Figure()
-    
-    # Main interval line
-    fig.add_trace(go.Scatter(
-        x=history_df['lap_number'],
-        y=history_df['interval'],
-        mode='lines+markers',
-        name=f'{driver1} vs {driver2}',
-        line=dict(color=POSITIVE_COLOR, width=3),
-        marker=dict(size=8),
-        hovertemplate='Lap %{x}<br>Gap: %{y:.3f}s<extra></extra>'
-    ))
-    
-    # Add trend line if requested
-    if show_trend and len(history_df) > 5:
-        # Simple moving average for trend
-        history_df['trend'] = history_df['interval'].rolling(window=5, center=True).mean()
-        fig.add_trace(go.Scatter(
-            x=history_df['lap_number'],
-            y=history_df['trend'],
-            mode='lines',
-            name='Trend',
-            line=dict(color='orange', width=2, dash='dash'),
-            hovertemplate='Trend: %{y:.3f}s<extra></extra>'
-        ))
-    
-    # Add zero line
-    fig.add_hline(
-        y=0, 
-        line_dash="dash", 
-        line_color=ZERO_LINE_COLOR, 
-        opacity=0.5,
-        annotation_text="Equal",
-        annotation_position="right"
-    )
-    
-    # Add DRS zone indicator
-    fig.add_hrect(
-        y0=0, y1=1,
-        fillcolor="green", opacity=0.1,
-        line_width=0,
-        annotation_text="DRS Zone",
-        annotation_position="top right"
-    )
-    
-    # Update layout
-    fig.update_layout(
-        title=dict(
-            text=f"Interval Analysis: {driver1} vs {driver2}",
-            x=0.5,
-            xanchor='center'
-        ),
-        xaxis_title="Lap Number",
-        yaxis_title="Gap (seconds)",
-        hovermode='x unified',
-        height=PLOT_HEIGHT,
-        template=PLOT_TEMPLATE,
-        showlegend=True,
-        legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=0.01
-        )
-    )
-    
-    # Auto scale or fixed scale
-    if not auto_scale:
-        fig.update_yaxis(range=[-10, 10])
-    
-    # Add annotations
-    fig.add_annotation(
-        text=f"Positive = {driver1} ahead<br>Negative = {driver2} ahead",
-        xref="paper", yref="paper",
-        x=0.99, y=0.01,
-        showarrow=False,
-        font=dict(size=10, color="gray"),
-        align="right"
-    )
-    
-    return fig
-
-
-def display_statistics(history_df):
-    """Display interval statistics"""
-    if history_df.empty:
-        st.info("No data available yet")
-        return
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    latest = history_df.iloc[-1]
-    
-    with col1:
-        st.metric("Current Gap", f"{latest['interval']:.3f}s")
-    
-    with col2:
-        avg_gap = history_df['interval'].mean()
-        st.metric("Average Gap", f"{avg_gap:.3f}s")
-    
-    with col3:
-        min_gap = history_df['interval'].min()
-        st.metric("Minimum Gap", f"{min_gap:.3f}s")
-    
-    with col4:
-        max_gap = history_df['interval'].max()
-        st.metric("Maximum Gap", f"{max_gap:.3f}s")
-    
-    # Trend analysis
-    if len(history_df) > 5:
-        recent_trend = history_df['interval_change'].tail(5).mean()
-        if recent_trend < -0.1:
-            st.success("Gap is closing rapidly")
-        elif recent_trend > 0.1:
-            st.warning("Gap is extending")
-        else:
-            st.info("Gap is stable")
-
-
-def display_events(calculator, driver1_num, driver2_num):
-    """Display detected events"""
-    events1 = calculator.detect_events(driver1_num)
-    events2 = calculator.detect_events(driver2_num)
-    
-    if not events1 and not events2:
-        st.info("No events detected yet")
-        return
-    
-    # Combine and sort events
-    all_events = []
-    for event in events1:
-        event['driver'] = 'Driver 1'
-        all_events.append(event)
-    for event in events2:
-        event['driver'] = 'Driver 2'
-        all_events.append(event)
-    
-    all_events.sort(key=lambda x: x['lap'])
-    
-    # Display events
-    for event in all_events:
-        if event['type'] == 'pit_stop':
-            st.write(f"🛑 Lap {event['lap']}: {event['driver']} pit stop ({event['duration']:.1f}s)")
-
-
-# Run the app
-if __name__ == "__main__":
-    st.sidebar.markdown("---")
-    st.sidebar.caption("F1 Interval Tracker v1.0")

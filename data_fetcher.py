@@ -45,15 +45,25 @@ class F1DataFetcher:
                     time.sleep(2 ** attempt)  # Exponential backoff
                 else:
                     logger.error(f"Failed to fetch data from {endpoint}: {e}")
-                    return None
+        return None
     
     def get_recent_sessions(self, limit: int = 20) -> List[Dict]:
         """Get list of recent sessions"""
-        data = self._make_request("sessions", {"limit": limit})
-        if data:
-            # Sort by date, most recent first
-            return sorted(data, key=lambda x: x.get('date_start', ''), reverse=True)
-        return []
+        # Get sessions from recent years
+        current_year = datetime.now().year
+        all_sessions = []
+        
+        # Fetch sessions for current and previous year
+        for year in [current_year, current_year - 1]:
+            data = self._make_request("sessions", {"year": year})
+            if data:
+                all_sessions.extend(data)
+        
+        # Sort by date, most recent first
+        all_sessions.sort(key=lambda x: x.get('date_start', ''), reverse=True)
+        
+        # Return only the requested limit
+        return all_sessions[:limit]
     
     def get_latest_session(self) -> Optional[Dict]:
         """Get the most recent session"""

@@ -22,7 +22,7 @@ RETRY_ATTEMPTS = 3
 
 # Data refresh settings
 LIVE_UPDATE_INTERVAL = 5  # seconds between updates during live sessions
-SIMULATION_SPEED = 1.0  # Speed multiplier for replay (1.0 = real-time)
+SIMULATION_SPEED = 100.0  # Speed multiplier for replay (1.0 = real-time)
 
 # Visualization settings
 PLOT_HEIGHT = 600

@@ -188,7 +188,7 @@ class IntervalCalculator:
         """
         Detect events like pit stops, fastest laps, etc.
         """
-        events = []
+        events: list = []
         driver_laps = self.lap_data[self.lap_data['driver_number'] == driver_num]
         
         if len(driver_laps) < 2:
