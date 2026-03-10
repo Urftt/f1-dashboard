@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.115.0",
     "fastf1>=3.5.3",
     "ipykernel>=6.29.5",
     "jupyter>=1.1.1",
@@ -14,6 +15,7 @@ dependencies = [
     "python-dotenv>=1.1.0",
     "requests>=2.32.3",
     "streamlit>=1.45.1",
+    "uvicorn>=0.34.0",
 ]
 
 [project.scripts]
@@ -30,5 +32,6 @@ packages = ["."]
 dev = [
     "mypy>=1.16.0",
     "pandas-stubs>=2.2.0",
+    "pytest",
     "types-requests>=2.32.0.20250602",
 ]

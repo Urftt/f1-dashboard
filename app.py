@@ -15,6 +15,9 @@ from config import (
 )
 from data_fetcher import F1DataFetcher, SessionRecorder
 from data_processor import IntervalCalculator, RaceAnalyzer
+from session_selector import render_session_selector, SessionSelection
+from fastf1_service import FastF1Service
+from standings_board import render_standings_board
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -37,6 +40,75 @@ if 'selected_session' not in st.session_state:
 if 'last_update' not in st.session_state:
     st.session_state.last_update = None
 
+def _load_fastf1_session(selection: SessionSelection):
+    """Load a FastF1 session based on the cascading selector result."""
+    import fastf1
+
+    status = st.sidebar.empty()
+    status.info(f"⏳ Loading {selection.event_name} – {selection.session_name}…")
+
+    try:
+        session = fastf1.get_session(
+            selection.year,
+            selection.round_number,
+            selection.session_name,
+        )
+        session.load(telemetry=False, weather=False, messages=False)
+
+        # Extract driver info
+        drivers_df = session.drivers  # list of driver numbers
+        driver_info = session.results if hasattr(session, 'results') else None
+
+        driver_numbers_map: dict[str, int] = {}
+        driver_names: list[str] = []
+
+        if driver_info is not None and not driver_info.empty:
+            for _, row in driver_info.iterrows():
+                abbr = str(row.get("Abbreviation", ""))
+                num = int(row.get("DriverNumber", 0))
+                if abbr and num:
+                    driver_numbers_map[abbr] = num
+                    driver_names.append(abbr)
+
+        # Store lap data
+        laps = session.laps
+        if laps is not None and not laps.empty:
+            # Convert FastF1 lap data to format compatible with IntervalCalculator
+            lap_records = []
+            for _, lap in laps.iterrows():
+                lap_records.append({
+                    "driver_number": int(lap["DriverNumber"]),
+                    "lap_number": int(lap["LapNumber"]),
+                    "date_start": lap["LapStartDate"] if pd.notna(lap.get("LapStartDate")) else lap.get("Time"),
+                    "position": int(lap["Position"]) if pd.notna(lap.get("Position")) else 0,
+                })
+            lap_df = pd.DataFrame(lap_records)
+            lap_df["date_start"] = pd.to_datetime(lap_df["date_start"], utc=True)
+            st.session_state.calculator = IntervalCalculator()
+            st.session_state.calculator.update_lap_data(lap_df)
+        else:
+            st.session_state.calculator = IntervalCalculator()
+
+        # Update session state
+        st.session_state.fetcher.driver_numbers = driver_numbers_map
+        st.session_state.available_drivers = driver_names
+        st.session_state.selected_session = f"fastf1_{selection.year}_{selection.round_number}"
+        st.session_state.loaded_session_label = (
+            f"{selection.year} {selection.event_name} – {selection.session_name}"
+        )
+        st.session_state.interval_history = pd.DataFrame()
+        st.session_state.is_tracking = False
+
+        status.success(
+            f"✅ Loaded: {selection.event_name} – {selection.session_name} "
+            f"({len(driver_names)} drivers)"
+        )
+
+    except Exception as exc:
+        logger.error(f"Failed to load session: {exc}")
+        status.error(f"❌ Failed to load session: {exc}")
+
+
 # Title and description
 st.title("🏎️ F1 Driver Interval Tracker")
 st.markdown("Track real-time intervals between drivers during F1 sessions")
@@ -55,50 +127,12 @@ with st.sidebar:
     st.divider()
     
     if data_source == "Historical Session":
-        # Historical session selection
-        st.subheader("Historical Data")
-        
-        if st.button("🔄 Refresh Sessions"):
-            with st.spinner("Fetching sessions..."):
-                sessions = st.session_state.fetcher.get_recent_sessions()
-                st.session_state.available_sessions = sessions
-        
-        # Get sessions if not already loaded
-        if 'available_sessions' not in st.session_state:
-            sessions = st.session_state.fetcher.get_recent_sessions()
-            st.session_state.available_sessions = sessions
-        
-        if st.session_state.available_sessions:
-            # Create session options
-            session_options = []
-            for session in st.session_state.available_sessions:
-                date = session.get('date_start', 'Unknown date')[:10]
-                name = session.get('session_name', 'Unknown session')
-                key = session.get('session_key', 0)
-                session_options.append(f"{date} - {name} (#{key})")
-            
-            selected_session_str = st.selectbox("Select Session", session_options)
-            
-            if st.button("📥 Load Session", type="primary"):
-                # Extract session key from selection
-                session_key = int(selected_session_str.split('#')[-1].strip(')'))
-                
-                with st.spinner("Loading session data..."):
-                    if st.session_state.fetcher.load_session(session_key):
-                        st.session_state.selected_session = session_key
-                        
-                        # Load initial data
-                        drivers = st.session_state.fetcher.get_driver_list()
-                        st.session_state.available_drivers = drivers
-                        
-                        # Load lap data
-                        driver_numbers = list(st.session_state.fetcher.driver_numbers.values())
-                        lap_data = st.session_state.fetcher.get_lap_data(driver_numbers)
-                        st.session_state.calculator.update_lap_data(lap_data)
-                        
-                        st.success("Session loaded successfully!")
-                    else:
-                        st.error("Failed to load session")
+        # Cascading session selector: Year → Grand Prix → Session Type
+        selection = render_session_selector(sidebar=True)
+
+        if selection is not None:
+            # User clicked "Load Session" — load via FastF1
+            _load_fastf1_session(selection)
     
     elif data_source == "Recorded Session":
         st.subheader("Recorded Sessions")

@@ -1,0 +1,401 @@
+/* ─── Replay Controls ─────────────────────────────────────────────── */
+
+.replay-controls {
+  background: #1a1a2e;
+  border: 1px solid #2d2d3d;
+  border-radius: 12px;
+  padding: 16px 20px 12px;
+  margin-top: 16px;
+  animation: panel-fade-in 0.3s ease;
+}
+
+/* ─── Top row: buttons, counter, status, speed ───────────────────── */
+
+.replay-controls__top-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ─── Play / Pause button ────────────────────────────────────────── */
+
+.replay-controls__play-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid #e10600;
+  border-radius: 50%;
+  background: rgba(225, 6, 0, 0.12);
+  color: #e10600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.replay-controls__play-btn:hover:not(:disabled) {
+  background: #e10600;
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(225, 6, 0, 0.4);
+}
+
+.replay-controls__play-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.replay-controls__play-btn--playing {
+  border-color: #ffab00;
+  background: rgba(255, 171, 0, 0.12);
+  color: #ffab00;
+}
+
+.replay-controls__play-btn--playing:hover:not(:disabled) {
+  background: #ffab00;
+  color: #1a1a2e;
+}
+
+/* ─── Reset button ───────────────────────────────────────────────── */
+
+.replay-controls__reset-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #3d3d50;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #8b8ba0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.replay-controls__reset-btn:hover:not(:disabled) {
+  border-color: #e0e0f0;
+  color: #e0e0f0;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.replay-controls__reset-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ─── Lap counter ────────────────────────────────────────────────── */
+
+.replay-controls__lap-counter {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.replay-controls__lap-label {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #8b8ba0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.replay-controls__lap-value {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.replay-controls__lap-total {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #6b6b80;
+}
+
+/* ─── Status indicator ───────────────────────────────────────────── */
+
+.replay-controls__status {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 4px 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.replay-controls__status--ready {
+  color: #e10600;
+  background: rgba(225, 6, 0, 0.12);
+  border: 1px solid rgba(225, 6, 0, 0.3);
+}
+
+.replay-controls__status--playing {
+  color: #00e676;
+  background: rgba(0, 230, 118, 0.12);
+  border: 1px solid rgba(0, 230, 118, 0.3);
+  animation: status-pulse 1.5s ease-in-out infinite;
+}
+
+.replay-controls__status--paused {
+  color: #ffab00;
+  background: rgba(255, 171, 0, 0.12);
+  border: 1px solid rgba(255, 171, 0, 0.3);
+}
+
+.replay-controls__status--finished {
+  color: #ffffff;
+  background: linear-gradient(135deg, #1a1a2e 25%, #2d2d3d 25%, #2d2d3d 50%, #1a1a2e 50%, #1a1a2e 75%, #2d2d3d 75%);
+  background-size: 10px 10px;
+  border: 1px solid #8b8ba0;
+}
+
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ─── Speed selector ─────────────────────────────────────────────── */
+
+.replay-controls__speed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.replay-controls__speed-label {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #8b8ba0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.replay-controls__speed-select {
+  appearance: none;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #e0e0f0;
+  background: #15151e;
+  border: 1px solid #3d3d50;
+  border-radius: 6px;
+  padding: 6px 28px 6px 12px;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238b8ba0' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.replay-controls__speed-select:hover {
+  border-color: #e0e0f0;
+}
+
+.replay-controls__speed-select:focus {
+  outline: none;
+  border-color: #e10600;
+}
+
+/* ─── Jump to Lap control ────────────────────────────────────────── */
+
+.replay-controls__jump {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.replay-controls__jump-label {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #8b8ba0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.replay-controls__jump-input-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.replay-controls__jump-input {
+  appearance: none;
+  -moz-appearance: textfield;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #e0e0f0;
+  background: #15151e;
+  border: 1px solid #3d3d50;
+  border-radius: 6px;
+  padding: 6px 8px;
+  width: 64px;
+  text-align: center;
+  transition: border-color 0.2s ease;
+}
+
+.replay-controls__jump-input::-webkit-inner-spin-button,
+.replay-controls__jump-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.replay-controls__jump-input::placeholder {
+  color: #4a4a5e;
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+.replay-controls__jump-input:hover {
+  border-color: #e0e0f0;
+}
+
+.replay-controls__jump-input:focus {
+  outline: none;
+  border-color: #e10600;
+  box-shadow: 0 0 8px rgba(225, 6, 0, 0.25);
+}
+
+.replay-controls__jump-btn {
+  appearance: none;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  background: #e10600;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.replay-controls__jump-btn:hover:not(:disabled) {
+  background: #ff2020;
+  box-shadow: 0 0 12px rgba(225, 6, 0, 0.4);
+}
+
+.replay-controls__jump-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.replay-controls__jump-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: #3d3d50;
+  color: #6b6b80;
+}
+
+/* ─── Timing info ────────────────────────────────────────────────── */
+
+.replay-controls__timing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.replay-controls__timing-label {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #6b6b80;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.replay-controls__timing-value {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e0e0f0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Slider / progress bar ──────────────────────────────────────── */
+
+.replay-controls__slider-row {
+  position: relative;
+  margin-top: 14px;
+  height: 6px;
+  background: #2d2d3d;
+  border-radius: 3px;
+  overflow: visible;
+}
+
+.replay-controls__progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #e10600, #ff4444);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  pointer-events: none;
+}
+
+.replay-controls__slider {
+  position: absolute;
+  top: -8px;
+  left: 0;
+  width: 100%;
+  height: 22px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+  z-index: 1;
+}
+
+.replay-controls__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #e10600;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px rgba(225, 6, 0, 0.5);
+  cursor: grab;
+  transition: transform 0.15s ease;
+}
+
+.replay-controls__slider::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+}
+
+.replay-controls__slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #e10600;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px rgba(225, 6, 0, 0.5);
+  cursor: grab;
+}
+
+.replay-controls__slider::-webkit-slider-runnable-track {
+  height: 6px;
+  background: transparent;
+}
+
+.replay-controls__slider::-moz-range-track {
+  height: 6px;
+  background: transparent;
+}

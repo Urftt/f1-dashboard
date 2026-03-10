@@ -1,0 +1,524 @@
+/* ─── StandingsBoard — F1 TV-style race standings ────────────────── */
+
+.sb {
+  font-family: 'Inter', 'Titillium Web', 'Arial Narrow', Arial, sans-serif;
+  background: #15151e;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #2d2d3d;
+  width: 100%;
+  max-width: 900px;
+  animation: sb-fade-in 0.35s ease;
+}
+
+/* ── Header bar (F1 red) ──────────────────────────────────────────── */
+
+.sb__header {
+  background: linear-gradient(135deg, #e10600 0%, #b80500 100%);
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(225, 6, 0, 0.25);
+}
+
+.sb__title {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.sb__lap {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* ── Column headings ──────────────────────────────────────────────── */
+
+.sb__col-headings {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: #111119;
+  border-bottom: 1px solid #2d2d3d;
+}
+
+.sb__col {
+  font-size: 10px;
+  font-weight: 700;
+  color: #555568;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  flex-shrink: 0;
+}
+
+.sb__col--pos {
+  width: 36px;
+  text-align: center;
+}
+
+.sb__col--bar {
+  width: 4px;
+  margin: 0 8px;
+}
+
+.sb__col--driver {
+  width: 72px;
+}
+
+.sb__col--team {
+  width: 130px;
+}
+
+.sb__col--gap {
+  width: 90px;
+  text-align: right;
+}
+
+.sb__col--int {
+  width: 80px;
+  text-align: right;
+}
+
+.sb__col--last {
+  width: 90px;
+  text-align: right;
+}
+
+.sb__col--tyre {
+  width: 64px;
+  text-align: center;
+}
+
+.sb__col--pit {
+  width: 36px;
+  text-align: center;
+}
+
+/* ── Body ─────────────────────────────────────────────────────────── */
+
+.sb__body {
+  padding: 0;
+}
+
+.sb__empty {
+  padding: 24px;
+  text-align: center;
+  color: #6b6b80;
+  font-size: 14px;
+}
+
+/* ── Row ──────────────────────────────────────────────────────────── */
+
+.sb__row {
+  display: flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-bottom: 1px solid rgba(45, 45, 61, 0.4);
+  min-height: 36px;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  animation: sb-row-enter 0.25s ease both;
+}
+
+/* Staggered row entrance — first 20 rows get unique delays */
+.sb__row:nth-child(1)  { animation-delay: 0.02s; }
+.sb__row:nth-child(2)  { animation-delay: 0.04s; }
+.sb__row:nth-child(3)  { animation-delay: 0.06s; }
+.sb__row:nth-child(4)  { animation-delay: 0.08s; }
+.sb__row:nth-child(5)  { animation-delay: 0.10s; }
+.sb__row:nth-child(6)  { animation-delay: 0.12s; }
+.sb__row:nth-child(7)  { animation-delay: 0.14s; }
+.sb__row:nth-child(8)  { animation-delay: 0.16s; }
+.sb__row:nth-child(9)  { animation-delay: 0.18s; }
+.sb__row:nth-child(10) { animation-delay: 0.20s; }
+.sb__row:nth-child(11) { animation-delay: 0.22s; }
+.sb__row:nth-child(12) { animation-delay: 0.24s; }
+.sb__row:nth-child(13) { animation-delay: 0.26s; }
+.sb__row:nth-child(14) { animation-delay: 0.28s; }
+.sb__row:nth-child(15) { animation-delay: 0.30s; }
+.sb__row:nth-child(16) { animation-delay: 0.32s; }
+.sb__row:nth-child(17) { animation-delay: 0.34s; }
+.sb__row:nth-child(18) { animation-delay: 0.36s; }
+.sb__row:nth-child(19) { animation-delay: 0.38s; }
+.sb__row:nth-child(20) { animation-delay: 0.40s; }
+
+.sb__row--even {
+  background: #1b1b2a;
+}
+
+.sb__row--odd {
+  background: #15151e;
+}
+
+.sb__row:hover {
+  background: #262638 !important;
+}
+
+.sb__row:last-child {
+  border-bottom: none;
+}
+
+/* Fastest lap holder row — subtle purple tint */
+.sb__row--fastest {
+  background: rgba(168, 85, 247, 0.06) !important;
+  box-shadow: inset 3px 0 0 0 #a855f7;
+}
+
+.sb__row--fastest.sb__row--even {
+  background: rgba(168, 85, 247, 0.08) !important;
+}
+
+.sb__row--fastest:hover {
+  background: rgba(168, 85, 247, 0.12) !important;
+}
+
+/* ── Cells ────────────────────────────────────────────────────────── */
+
+.sb__cell {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Position */
+.sb__cell--pos {
+  width: 36px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  color: #e0e0f0;
+}
+
+/* Podium position colors */
+.sb__cell--pos-1 {
+  color: #FFD700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+
+.sb__cell--pos-2 {
+  color: #C0C0C0;
+  text-shadow: 0 0 6px rgba(192, 192, 192, 0.2);
+}
+
+.sb__cell--pos-3 {
+  color: #CD7F32;
+  text-shadow: 0 0 6px rgba(205, 127, 50, 0.2);
+}
+
+/* Team colour bar */
+.sb__cell--bar {
+  width: 4px;
+  height: 24px;
+  border-radius: 2px;
+  margin: 0 8px;
+  transition: box-shadow 0.15s ease;
+}
+
+.sb__row:hover .sb__cell--bar {
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* Driver abbreviation */
+.sb__cell--driver {
+  width: 72px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Team name */
+.sb__cell--team {
+  width: 130px;
+  font-size: 12px;
+  color: #6b6b80;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Gap to leader */
+.sb__cell--gap {
+  width: 90px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 500;
+  color: #8b8ba0;
+}
+
+/* Interval */
+.sb__cell--int {
+  width: 80px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 500;
+  color: #8b8ba0;
+}
+
+/* Leader highlight */
+.sb__cell--leader {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* Last lap time */
+.sb__cell--last {
+  width: 90px;
+  text-align: right;
+  font-size: 12px;
+  color: #8b8ba0;
+}
+
+/* Fastest lap highlight (purple) */
+.sb__cell--fastest {
+  color: #a855f7;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
+}
+
+/* Fastest lap indicator dot next to driver name */
+.sb__fastest-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #a855f7;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.7), 0 0 12px rgba(168, 85, 247, 0.3);
+  animation: sb-pulse-dot 2s ease-in-out infinite;
+}
+
+/* ── Tyre info ────────────────────────────────────────────────────── */
+
+.sb__cell--tyre {
+  width: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #8b8ba0;
+}
+
+.sb__tyre-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+/* Compound-specific badge glow */
+.sb__tyre-badge--soft {
+  background: #FF3333;
+  box-shadow: 0 0 6px rgba(255, 51, 51, 0.35);
+}
+
+.sb__tyre-badge--medium {
+  background: #FFC800;
+  color: #1a1a1a;
+  box-shadow: 0 0 6px rgba(255, 200, 0, 0.3);
+}
+
+.sb__tyre-badge--hard {
+  background: #CCCCCC;
+  color: #1a1a1a;
+  box-shadow: 0 0 4px rgba(204, 204, 204, 0.2);
+}
+
+.sb__tyre-badge--intermediate {
+  background: #43B02A;
+  box-shadow: 0 0 6px rgba(67, 176, 42, 0.35);
+}
+
+.sb__tyre-badge--wet {
+  background: #0072C6;
+  box-shadow: 0 0 6px rgba(0, 114, 198, 0.35);
+}
+
+.sb__tyre-badge--unknown {
+  background: #555568;
+}
+
+.sb__row:hover .sb__tyre-badge {
+  transform: scale(1.1);
+}
+
+.sb__tyre-age {
+  font-size: 11px;
+  color: #555568;
+  min-width: 14px;
+  text-align: left;
+}
+
+/* ── Pit stops ────────────────────────────────────────────────────── */
+
+.sb__cell--pit {
+  width: 36px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b6b80;
+}
+
+.sb__pit-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.sb__pit-icon svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0.6;
+}
+
+.sb__pit-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: #8b8ba0;
+}
+
+/* ── Position change indicators ──────────────────────────────────── */
+
+.sb__pos-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 9px;
+  font-weight: 700;
+  margin-left: 3px;
+  vertical-align: middle;
+  animation: sb-pos-change-enter 0.4s ease both;
+}
+
+.sb__pos-change--gained {
+  color: #22c55e;
+  text-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+}
+
+.sb__pos-change--lost {
+  color: #ef4444;
+  text-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+}
+
+.sb__pos-change-num {
+  font-size: 9px;
+  font-weight: 700;
+}
+
+/* Row gained/lost highlights (brief flash) */
+.sb__row--gained {
+  animation: sb-row-gained-flash 0.8s ease both;
+}
+
+.sb__row--lost {
+  animation: sb-row-lost-flash 0.8s ease both;
+}
+
+/* ── Lap flash — brief border highlight when lap changes ─────────── */
+
+.sb--lap-flash {
+  border-color: rgba(225, 6, 0, 0.5);
+  box-shadow: 0 0 12px rgba(225, 6, 0, 0.15);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.sb__lap--flash {
+  animation: sb-lap-counter-flash 0.6s ease;
+}
+
+/* ── Animations ──────────────────────────────────────────────────── */
+
+@keyframes sb-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sb-row-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sb-pulse-dot {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(168, 85, 247, 0.7), 0 0 12px rgba(168, 85, 247, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.9), 0 0 20px rgba(168, 85, 247, 0.5);
+  }
+}
+
+@keyframes sb-pos-change-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes sb-row-gained-flash {
+  0% { background: rgba(34, 197, 94, 0.15) !important; }
+  100% { background: inherit; }
+}
+
+@keyframes sb-row-lost-flash {
+  0% { background: rgba(239, 68, 68, 0.12) !important; }
+  100% { background: inherit; }
+}
+
+@keyframes sb-lap-counter-flash {
+  0% { transform: scale(1); color: #ffffff; }
+  30% { transform: scale(1.15); color: #ffc800; text-shadow: 0 0 8px rgba(255, 200, 0, 0.6); }
+  100% { transform: scale(1); color: #ffffff; text-shadow: none; }
+}
+
+/* ── Responsive: collapse team name on narrow screens ─────────────── */
+
+@media (max-width: 700px) {
+  .sb__col--team,
+  .sb__cell--team {
+    display: none;
+  }
+
+  .sb__col--gap,
+  .sb__cell--gap {
+    width: 72px;
+    font-size: 12px;
+  }
+
+  .sb__col--int,
+  .sb__cell--int {
+    width: 64px;
+    font-size: 12px;
+  }
+}

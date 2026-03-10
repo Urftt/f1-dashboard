@@ -1,0 +1,94 @@
+/* ─── Driver Selector ─────────────────────────────────────────────── */
+
+.driver-selector {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  background: #1e1e2e;
+  border: 1px solid #2d2d3d;
+  border-radius: 12px;
+  padding: 16px 24px;
+  margin-top: 12px;
+  animation: panel-fade-in 0.3s ease;
+}
+
+.driver-selector--loading {
+  justify-content: center;
+  align-items: center;
+  color: #8b8ba0;
+  font-size: 0.875rem;
+  gap: 8px;
+}
+
+.driver-selector__spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #3d3d5c;
+  border-top-color: #e10600;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.driver-selector__group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.driver-selector__label {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #8b8ba0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.driver-selector__select {
+  appearance: none;
+  background: #15151e;
+  color: #e0e0f0;
+  border: 2px solid #3d3d5c;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b8ba0' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.driver-selector__select:hover {
+  border-color: #5a5a7a;
+}
+
+.driver-selector__select:focus {
+  outline: none;
+  border-color: #e10600;
+  box-shadow: 0 0 0 3px rgba(225, 6, 0, 0.15);
+}
+
+.driver-selector__select option {
+  background: #15151e;
+  color: #e0e0f0;
+}
+
+.driver-selector__vs {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #e10600;
+  letter-spacing: 0.1em;
+  padding-bottom: 12px;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
