@@ -183,7 +183,13 @@ class F1DataFetcher:
         return replay_session
 
     def get_session_lap_data(self, session_key: int, driver_numbers: List[int]) -> pd.DataFrame:
-        """Fetch lap data for a specific session without requiring UI-managed state."""
+        """
+        Fetch lap data for a specific session without requiring UI-managed state.
+
+        This compatibility seam lets `app.py` keep using `load_session()` and
+        `get_lap_data()` while the replay preload path moves normalization into
+        reusable helpers.
+        """
         if not driver_numbers:
             return pd.DataFrame()
 

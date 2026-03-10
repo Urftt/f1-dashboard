@@ -83,7 +83,12 @@ def normalize_replay_session(
     driver_rows: Iterable[Mapping[str, Any]],
     lap_rows: Iterable[Mapping[str, Any]] | pd.DataFrame,
 ) -> ReplaySession:
-    """Build a replay-ready session contract from raw OpenF1-style payloads."""
+    """
+    Build a replay-ready session contract from raw OpenF1-style payloads.
+
+    The replay contract stays lap-granular for Phase 1 so later snapshot helpers
+    can answer "latest known state at lap N" without depending on Streamlit.
+    """
     normalized_drivers = normalize_drivers(driver_rows)
     normalized_laps = normalize_laps(lap_rows)
 
@@ -165,6 +170,8 @@ def normalize_laps(
     Duplicate driver/lap rows are collapsed by keeping the latest timestamped row.
     Missing timestamps are allowed, but ordering still falls back to lap number and
     driver number so the replay contract stays deterministic.
+    Tyre-related fields remain optional because OpenF1 payloads are not guaranteed
+    to include them on every row.
     """
     if isinstance(lap_rows, pd.DataFrame):
         records = lap_rows.to_dict("records")
