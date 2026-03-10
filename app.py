@@ -23,8 +23,8 @@ from config import (
 from data_fetcher import F1DataFetcher, SessionRecorder
 from data_processor import (
     IntervalCalculator,
-    filter_interval_history_from_controller,
-    get_replay_snapshot_from_controller,
+    build_replay_view_model,
+    get_cached_replay_interval_history,
     resolve_replay_lap_from_controller,
 )
 from replay_controls import (
@@ -90,44 +90,6 @@ def _get_driver_number(driver_name: str | None) -> int:
     return int(st.session_state.fetcher.driver_numbers.get(driver_name or "", 0))
 
 
-def _get_historical_pair_key(driver1_num: int, driver2_num: int) -> tuple[int | str | None, int, int]:
-    ordered_pair = tuple(sorted((driver1_num, driver2_num)))
-    return (st.session_state.get("selected_session"), *ordered_pair)
-
-
-def _build_historical_interval_history(driver1_num: int, driver2_num: int) -> pd.DataFrame:
-    replay_session = st.session_state.get("replay_session")
-    if replay_session is None:
-        return pd.DataFrame()
-
-    lap_data = pd.DataFrame(
-        [
-            {
-                "driver_number": lap.driver_number,
-                "lap_number": lap.lap_number,
-                "date_start": lap.date_start,
-                "position": lap.position,
-            }
-            for driver_number in (driver1_num, driver2_num)
-            for lap in replay_session.get_driver_laps(driver_number)
-        ]
-    )
-    if lap_data.empty:
-        return pd.DataFrame()
-
-    calculator = IntervalCalculator()
-    calculator.update_lap_data(lap_data)
-    return calculator.calculate_interval_history(driver1_num, driver2_num)
-
-
-def _get_cached_historical_interval_history(driver1_num: int, driver2_num: int) -> tuple[tuple[int | str | None, int, int], pd.DataFrame]:
-    pair_key = _get_historical_pair_key(driver1_num, driver2_num)
-    cache = st.session_state.historical_interval_history_cache
-    if pair_key not in cache:
-        cache[pair_key] = _build_historical_interval_history(driver1_num, driver2_num)
-    return pair_key, cache[pair_key]
-
-
 def _initialize_historical_replay_controller() -> None:
     replay_session = st.session_state.get("replay_session")
     if replay_session is None:
@@ -142,7 +104,17 @@ def _initialize_historical_replay_controller() -> None:
 
 
 def _ensure_historical_pair_state(driver1_num: int, driver2_num: int) -> pd.DataFrame:
-    pair_key, full_history = _get_cached_historical_interval_history(driver1_num, driver2_num)
+    replay_session = st.session_state.get("replay_session")
+    if replay_session is None:
+        return pd.DataFrame()
+
+    pair_key, full_history, _ = get_cached_replay_interval_history(
+        st.session_state.historical_interval_history_cache,
+        session_key=st.session_state.get("selected_session"),
+        replay_session=replay_session,
+        driver1_num=driver1_num,
+        driver2_num=driver2_num,
+    )
     if st.session_state.get("historical_pair_key") != pair_key:
         st.session_state.historical_pair_key = pair_key
         _initialize_historical_replay_controller()
@@ -175,12 +147,14 @@ def _get_selected_driver_snapshots() -> dict[int, dict]:
     if not driver_numbers:
         return {}
 
-    return get_replay_snapshot_from_controller(
+    view_model = build_replay_view_model(
         replay_session,
         driver_numbers,
+        _ensure_historical_pair_state(driver_numbers[0], driver_numbers[1]),
         controller_state,
         now=datetime.now(),
     )
+    return view_model["snapshots"]
 
 
 def _get_replay_position_caption() -> str | None:
@@ -188,39 +162,6 @@ def _get_replay_position_caption() -> str | None:
     if replay_lap is None:
         return None
     return f"Replay position is lap-granular: lap {replay_lap} from controller-owned session state"
-
-
-def _summarize_interval_history(interval_history: pd.DataFrame) -> dict[str, float | int | None | str]:
-    if interval_history.empty:
-        return {
-            "current_interval": None,
-            "lap": 0,
-            "trend": "unknown",
-            "closing_rate": 0.0,
-            "position_d1": 0,
-            "position_d2": 0,
-        }
-
-    latest = interval_history.iloc[-1]
-    if len(interval_history) >= 3:
-        recent_changes = interval_history["interval_change"].tail(3).mean()
-        if recent_changes < -0.1:
-            trend = "closing"
-        elif recent_changes > 0.1:
-            trend = "extending"
-        else:
-            trend = "stable"
-    else:
-        trend = "unknown"
-
-    return {
-        "current_interval": latest["interval"],
-        "lap": int(latest["lap_number"]),
-        "trend": trend,
-        "closing_rate": latest["closing_rate"] if pd.notna(latest["closing_rate"]) else 0.0,
-        "position_d1": int(latest["position_d1"]),
-        "position_d2": int(latest["position_d2"]),
-    }
 
 
 def _build_interval_figure(driver1: str, driver2: str, interval_history: pd.DataFrame) -> go.Figure:
@@ -345,17 +286,15 @@ def _render_historical_controls(driver1: str, driver2: str, full_history: pd.Dat
     if replay_session is None:
         return
 
-    visible_history = filter_interval_history_from_controller(
+    view_model = build_replay_view_model(
         replay_session,
+        [_get_driver_number(driver1), _get_driver_number(driver2)],
         full_history,
         controller_state,
         now=now,
     )
-    replay_lap = resolve_replay_lap_from_controller(
-        replay_session,
-        controller_state,
-        now=now,
-    )
+    visible_history = view_model["visible_history"]
+    replay_lap = view_model["replay_lap"]
     st.session_state.replay_position_lap = replay_lap
     st.session_state.interval_history = visible_history
     st.session_state.historical_replay_scrub_lap = replay_lap or 1
@@ -397,7 +336,7 @@ def _render_historical_controls(driver1: str, driver2: str, full_history: pd.Dat
         on_change=_on_historical_scrub_change,
     )
 
-    current_stats = _summarize_interval_history(visible_history)
+    current_stats = view_model["stats"]
     st.metric(
         "Current Gap",
         f"{abs(current_stats['current_interval']):.3f}s" if current_stats["current_interval"] else "---",
@@ -412,7 +351,7 @@ def _render_historical_controls(driver1: str, driver2: str, full_history: pd.Dat
         f"P{current_stats['position_d1']} vs P{current_stats['position_d2']} | Status: {st.session_state.replay_status}"
     )
 
-    replay_snapshots = _get_selected_driver_snapshots()
+    replay_snapshots = view_model["snapshots"]
     if replay_snapshots:
         replay_position_caption = _get_replay_position_caption()
         if replay_position_caption:
@@ -566,15 +505,16 @@ def main() -> None:
                 driver1_num = _get_driver_number(driver1)
                 driver2_num = _get_driver_number(driver2)
                 full_history = _ensure_historical_pair_state(driver1_num, driver2_num)
-                visible_history = filter_interval_history_from_controller(
+                view_model = build_replay_view_model(
                     st.session_state.replay_session,
+                    [driver1_num, driver2_num],
                     full_history,
                     st.session_state.replay_controller,
                     now=datetime.now(),
                 )
-                st.session_state.interval_history = visible_history
+                st.session_state.interval_history = view_model["visible_history"]
                 plot_container.plotly_chart(
-                    _build_interval_figure(driver1, driver2, visible_history),
+                    _build_interval_figure(driver1, driver2, view_model["visible_history"]),
                     use_container_width=True,
                 )
                 with info_container:

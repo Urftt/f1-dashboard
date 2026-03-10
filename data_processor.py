@@ -4,7 +4,7 @@ Process F1 timing data to calculate intervals between drivers
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, MutableMapping, Tuple, Optional
 import logging
 
 from replay_controls import (
@@ -271,6 +271,113 @@ def filter_interval_history_from_controller(
         now=now,
     )
     return filter_interval_history_for_replay(interval_history, replay_lap)
+
+
+def build_replay_interval_history(
+    replay_session: ReplaySession,
+    driver1_num: int,
+    driver2_num: int,
+) -> pd.DataFrame:
+    """Build deterministic pair history from preloaded replay laps."""
+    lap_data = pd.DataFrame(
+        [
+            {
+                "driver_number": lap.driver_number,
+                "lap_number": lap.lap_number,
+                "date_start": lap.date_start,
+                "position": lap.position,
+            }
+            for driver_number in (driver1_num, driver2_num)
+            for lap in replay_session.get_driver_laps(driver_number)
+        ]
+    )
+    if lap_data.empty:
+        return pd.DataFrame()
+
+    calculator = IntervalCalculator()
+    calculator.update_lap_data(lap_data)
+    return calculator.calculate_interval_history(driver1_num, driver2_num)
+
+
+def get_cached_replay_interval_history(
+    history_cache: MutableMapping[tuple[Any, int, int], pd.DataFrame],
+    *,
+    session_key: Any,
+    replay_session: ReplaySession,
+    driver1_num: int,
+    driver2_num: int,
+) -> tuple[tuple[Any, int, int], pd.DataFrame, bool]:
+    """Cache full pair history by session and ordered driver pair."""
+    ordered_pair = tuple(sorted((driver1_num, driver2_num)))
+    pair_key = (session_key, *ordered_pair)
+    refreshed = pair_key not in history_cache
+    if refreshed:
+        history_cache[pair_key] = build_replay_interval_history(
+            replay_session,
+            driver1_num,
+            driver2_num,
+        )
+    return pair_key, history_cache[pair_key], refreshed
+
+
+def summarize_interval_history(
+    interval_history: pd.DataFrame,
+) -> Dict[str, Any]:
+    """Compute the visible gap/KPI summary from the visible history prefix only."""
+    if interval_history.empty:
+        return {
+            "current_interval": None,
+            "lap": 0,
+            "trend": "unknown",
+            "closing_rate": 0.0,
+            "position_d1": 0,
+            "position_d2": 0,
+        }
+
+    latest = interval_history.iloc[-1]
+    if len(interval_history) >= 3:
+        recent_changes = interval_history["interval_change"].tail(3).mean()
+        if recent_changes < -0.1:
+            trend = "closing"
+        elif recent_changes > 0.1:
+            trend = "extending"
+        else:
+            trend = "stable"
+    else:
+        trend = "unknown"
+
+    return {
+        "current_interval": latest["interval"],
+        "lap": int(latest["lap_number"]),
+        "trend": trend,
+        "closing_rate": latest["closing_rate"] if pd.notna(latest["closing_rate"]) else 0.0,
+        "position_d1": int(latest["position_d1"]),
+        "position_d2": int(latest["position_d2"]),
+    }
+
+
+def build_replay_view_model(
+    replay_session: ReplaySession,
+    driver_numbers: List[int],
+    interval_history: pd.DataFrame,
+    controller_state: Optional[ReplayControllerState],
+    *,
+    now: Optional[datetime] = None,
+) -> Dict[str, Any]:
+    """Resolve visible history and snapshots from the same controller-driven lap."""
+    replay_lap = resolve_replay_lap_from_controller(
+        replay_session,
+        controller_state,
+        now=now,
+    )
+    visible_history = filter_interval_history_for_replay(interval_history, replay_lap)
+    snapshots = get_replay_snapshot(replay_session, driver_numbers, replay_lap)
+    return {
+        "replay_lap": replay_lap,
+        "visible_history": visible_history,
+        "snapshots": snapshots,
+        "stats": summarize_interval_history(visible_history),
+    }
 
 
 def get_latest_known_lap(
