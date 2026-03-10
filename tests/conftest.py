@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict
 
@@ -6,6 +7,7 @@ import pandas as pd
 import pytest
 
 from data_fetcher import F1DataFetcher
+from replay_controls import ReplayControllerState, initialize_replay_state
 from replay_data import ReplaySession, normalize_replay_session
 
 
@@ -82,3 +84,18 @@ def replay_fetcher(
     )
 
     return fetcher
+
+
+@pytest.fixture
+def replay_clock_start() -> datetime:
+    return datetime(2024, 3, 2, 15, 0, 0)
+
+
+@pytest.fixture
+def replay_clock_tick(replay_clock_start: datetime) -> datetime:
+    return replay_clock_start + timedelta(seconds=3)
+
+
+@pytest.fixture
+def replay_controller_state(replay_session: ReplaySession) -> ReplayControllerState:
+    return initialize_replay_state(replay_session.max_lap_number)
