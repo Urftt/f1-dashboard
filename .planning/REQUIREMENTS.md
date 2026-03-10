@@ -30,7 +30,7 @@
 
 - [ ] **RELY-01**: User can load a supported session and reach a working dashboard flow without app-breaking errors.
 - [ ] **RELY-02**: The app handles missing or incomplete session fields with clear fallback messaging instead of crashing.
-- [ ] **RELY-03**: Core replay and KPI calculations are covered by automated tests.
+- [x] **RELY-03**: Core replay and KPI calculations are covered by automated tests.
 
 ## v2 Requirements
 
@@ -75,7 +75,7 @@
 | STAT-04 | Phase 3 | Pending |
 | RELY-01 | Phase 4 | Pending |
 | RELY-02 | Phase 4 | Pending |
-| RELY-03 | Phase 1 | Pending |
+| RELY-03 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 15 total
@@ -84,4 +84,4 @@
 
 ---
 *Requirements defined: 2026-03-10*
-*Last updated: 2026-03-10 after completing Phase 1 Plan 02*
+*Last updated: 2026-03-10 after completing Phase 1 Plan 03*
