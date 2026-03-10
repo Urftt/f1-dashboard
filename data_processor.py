@@ -7,6 +7,11 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Tuple, Optional
 import logging
 
+from replay_controls import (
+    ReplayControllerState,
+    clamp_replay_lap,
+    get_effective_replay_lap,
+)
 from replay_data import ReplayLap, ReplaySession
 
 logger = logging.getLogger(__name__)
@@ -219,13 +224,37 @@ def resolve_replay_lap(
     replay_lap: Optional[int],
 ) -> Optional[int]:
     """Clamp a requested replay lap onto the normalized session contract."""
+    requested_lap = 1 if replay_lap is None else replay_lap
+    return clamp_replay_lap(requested_lap, replay_session.max_lap_number)
+
+
+def resolve_replay_lap_from_controller(
+    replay_session: ReplaySession,
+    controller_state: Optional[ReplayControllerState],
+    *,
+    now: Optional[datetime] = None,
+) -> Optional[int]:
+    """Resolve the lap from controller-owned replay state instead of chart history."""
+    if controller_state is None:
+        return resolve_replay_lap(replay_session, None)
+
+    effective_lap = get_effective_replay_lap(controller_state, now=now)
+    return resolve_replay_lap(replay_session, effective_lap)
+
+
+def filter_interval_history_for_replay(
+    interval_history: pd.DataFrame,
+    replay_lap: Optional[int],
+) -> pd.DataFrame:
+    """Return only the interval rows visible at the active replay lap."""
+    if interval_history.empty or "lap_number" not in interval_history.columns:
+        return interval_history.copy()
+
     if replay_lap is None:
-        return replay_session.max_lap_number
-    if replay_lap < 1:
-        return 1
-    if replay_session.max_lap_number is None:
-        return None
-    return min(replay_lap, replay_session.max_lap_number)
+        return interval_history.iloc[0:0].copy()
+
+    visible_history = interval_history[interval_history["lap_number"] <= replay_lap]
+    return visible_history.reset_index(drop=True)
 
 
 def get_latest_known_lap(
