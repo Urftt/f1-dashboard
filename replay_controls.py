@@ -6,7 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from datetime import datetime
 from math import floor
-from typing import Literal, Optional
+from typing import Any, Literal, MutableMapping, Optional
 
 
 ReplayStatus = Literal["stopped", "playing", "paused"]
@@ -222,3 +222,116 @@ def _normalize_positive_float(value: float) -> float:
 def _normalize_playback_speed(value: float) -> float:
     numeric = _normalize_positive_float(value)
     return max(MIN_PLAYBACK_SPEED, min(numeric, MAX_PLAYBACK_SPEED))
+
+
+def set_replay_session_state(
+    session_state: MutableMapping[str, Any],
+    state: ReplayControllerState,
+) -> ReplayControllerState:
+    """Persist controller state onto Streamlit session state consistently."""
+    session_state["replay_controller"] = state
+    session_state["replay_status"] = state.status
+    session_state["replay_position_lap"] = state.current_lap
+    session_state["replay_speed"] = state.playback_speed
+    return state
+
+
+def initialize_replay_session_state(
+    session_state: MutableMapping[str, Any],
+    max_lap_number: Optional[int],
+    *,
+    start_lap: int = 1,
+    seconds_per_lap: float = 1.0,
+    playback_speed: float = 1.0,
+) -> ReplayControllerState:
+    """Create replay controller session state for a newly loaded session."""
+    state = initialize_replay_state(
+        max_lap_number,
+        start_lap=start_lap,
+        seconds_per_lap=seconds_per_lap,
+        playback_speed=playback_speed,
+    )
+    return set_replay_session_state(session_state, state)
+
+
+def start_replay_state(
+    session_state: MutableMapping[str, Any],
+    *,
+    now: datetime,
+    start_lap: Optional[int] = None,
+) -> ReplayControllerState:
+    """Start replay from the current lap unless an explicit start lap is provided."""
+    state = session_state["replay_controller"]
+    requested_lap = state.current_lap if start_lap is None else start_lap
+    started = start_replay(state, now=now, start_lap=requested_lap or 1)
+    return set_replay_session_state(session_state, started)
+
+
+def pause_replay_state(
+    session_state: MutableMapping[str, Any],
+    *,
+    now: datetime,
+) -> ReplayControllerState:
+    """Pause the replay stored in session state."""
+    paused = pause_replay(session_state["replay_controller"], now=now)
+    return set_replay_session_state(session_state, paused)
+
+
+def resume_replay_state(
+    session_state: MutableMapping[str, Any],
+    *,
+    now: datetime,
+) -> ReplayControllerState:
+    """Resume the replay stored in session state."""
+    resumed = resume_replay(session_state["replay_controller"], now=now)
+    return set_replay_session_state(session_state, resumed)
+
+
+def restart_replay_state(
+    session_state: MutableMapping[str, Any],
+    *,
+    now: datetime,
+) -> ReplayControllerState:
+    """Restart replay from lap 1 using the existing controller contract."""
+    restarted = start_replay(session_state["replay_controller"], now=now, start_lap=1)
+    return set_replay_session_state(session_state, restarted)
+
+
+def set_replay_speed_state(
+    session_state: MutableMapping[str, Any],
+    *,
+    playback_speed: float,
+    now: datetime,
+) -> ReplayControllerState:
+    """Update stored playback speed and keep controller anchors consistent."""
+    changed = set_replay_speed(
+        session_state["replay_controller"],
+        playback_speed=playback_speed,
+        now=now,
+    )
+    return set_replay_session_state(session_state, changed)
+
+
+def scrub_replay_state(
+    session_state: MutableMapping[str, Any],
+    *,
+    requested_lap: Optional[int],
+    now: datetime,
+) -> ReplayControllerState:
+    """Move stored replay state to a requested lap."""
+    scrubbed = scrub_replay_to_lap(
+        session_state["replay_controller"],
+        requested_lap=requested_lap,
+        now=now,
+    )
+    return set_replay_session_state(session_state, scrubbed)
+
+
+def advance_replay_state(
+    session_state: MutableMapping[str, Any],
+    *,
+    now: datetime,
+) -> ReplayControllerState:
+    """Advance replay tick state and persist the result back into session state."""
+    advanced = advance_replay(session_state["replay_controller"], now=now)
+    return set_replay_session_state(session_state, advanced)
