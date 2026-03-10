@@ -14,6 +14,7 @@ from config import (
     OPENF1_BASE_URL, API_TIMEOUT, RETRY_ATTEMPTS,
     RECORDED_SESSIONS_DIR, RECORDING_FORMAT
 )
+from replay_data import ReplaySession, normalize_replay_session
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -29,6 +30,7 @@ class F1DataFetcher:
         self.current_session_key = None
         self.drivers = {}
         self.driver_numbers = {}  # Map acronym to number
+        self.current_replay_session: Optional[ReplaySession] = None
         
     def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> Optional[Dict]:
         """Make API request with retry logic"""
@@ -72,25 +74,29 @@ class F1DataFetcher:
     
     def load_session(self, session_key: int) -> bool:
         """Load a specific session and its drivers"""
-        # Verify session exists
-        session_data = self._make_request("sessions", {"session_key": session_key})
-        if not session_data:
+        session_row = self._get_session_row(session_key)
+        if not session_row:
             return False
-            
+
         self.current_session_key = session_key
-        self._load_drivers()
-        return True
-    
-    def _load_drivers(self):
+        self.current_replay_session = None
+        self._load_drivers(session_key)
+        return bool(self.drivers)
+
+    def _load_drivers(self, session_key: Optional[int] = None):
         """Load driver information for the current session"""
-        if not self.current_session_key:
+        target_session_key = session_key or self.current_session_key
+        if not target_session_key:
             return
-            
-        data = self._make_request("drivers", {"session_key": self.current_session_key})
+
+        data = self._make_request("drivers", {"session_key": target_session_key})
         if data:
-            self.drivers = {d['driver_number']: d for d in data}
-            self.driver_numbers = {d['name_acronym']: d['driver_number'] for d in data}
-            logger.info(f"Loaded {len(self.drivers)} drivers for session {self.current_session_key}")
+            self._set_driver_maps(data)
+            logger.info(
+                "Loaded %s drivers for session %s",
+                len(self.drivers),
+                target_session_key,
+            )
     
     def get_driver_list(self) -> List[str]:
         """Get list of driver acronyms for current session"""
@@ -113,6 +119,9 @@ class F1DataFetcher:
     
     def get_lap_data(self, driver_numbers: List[int]) -> pd.DataFrame:
         """Get lap timing data for specified drivers"""
+        if not self.current_session_key or not driver_numbers:
+            return pd.DataFrame()
+
         params = {
             "session_key": self.current_session_key,
             "driver_number": ",".join(map(str, driver_numbers))
@@ -121,10 +130,98 @@ class F1DataFetcher:
         data = self._make_request("laps", params)
         if data:
             df = pd.DataFrame(data)
-            if not df.empty:
+            if not df.empty and 'date_start' in df.columns:
                 df['date_start'] = pd.to_datetime(df['date_start'])
+            if not df.empty and 'date' in df.columns:
+                df['date'] = pd.to_datetime(df['date'])
             return df
         return pd.DataFrame()
+
+    def load_replay_session(self, session_key: int) -> Optional[ReplaySession]:
+        """
+        Preload a historical session into a reusable replay contract.
+
+        Replay is intentionally lap-granular in this phase. The loader fetches the
+        session once, loads every available driver, and normalizes lap rows so
+        duplicate driver/lap payloads collapse to the latest timestamped row.
+        Missing tyre fields remain optional but are retained in the normalized
+        contract so later replay helpers can apply clear fallbacks.
+        """
+        session_row = self._get_session_row(session_key)
+        if not session_row:
+            logger.warning("Session %s could not be found", session_key)
+            return None
+
+        driver_rows = self._get_driver_rows(session_key)
+        if not driver_rows:
+            logger.warning("No drivers returned for session %s", session_key)
+            return None
+
+        driver_numbers = [
+            int(driver["driver_number"])
+            for driver in driver_rows
+            if driver.get("driver_number") is not None
+        ]
+        lap_data = self.get_session_lap_data(session_key, driver_numbers)
+
+        replay_session = normalize_replay_session(
+            session_row=session_row,
+            driver_rows=driver_rows,
+            lap_rows=lap_data,
+        )
+
+        self.current_session_key = session_key
+        self.current_replay_session = replay_session
+        self._set_driver_maps(driver_rows)
+
+        logger.info(
+            "Preloaded replay session %s with %s drivers and %s normalized laps",
+            session_key,
+            len(replay_session.drivers),
+            len(replay_session.ordered_laps),
+        )
+        return replay_session
+
+    def get_session_lap_data(self, session_key: int, driver_numbers: List[int]) -> pd.DataFrame:
+        """Fetch lap data for a specific session without requiring UI-managed state."""
+        if not driver_numbers:
+            return pd.DataFrame()
+
+        params = {
+            "session_key": session_key,
+            "driver_number": ",".join(map(str, driver_numbers)),
+        }
+        data = self._make_request("laps", params)
+        if not data:
+            return pd.DataFrame()
+
+        df = pd.DataFrame(data)
+        if not df.empty and "date_start" in df.columns:
+            df["date_start"] = pd.to_datetime(df["date_start"])
+        if not df.empty and "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"])
+        return df
+
+    def _get_session_row(self, session_key: int) -> Optional[Dict]:
+        """Fetch one session row for the provided key."""
+        session_data = self._make_request("sessions", {"session_key": session_key})
+        if not session_data:
+            return None
+        return session_data[0]
+
+    def _get_driver_rows(self, session_key: int) -> List[Dict]:
+        """Fetch the raw driver payloads for a session."""
+        data = self._make_request("drivers", {"session_key": session_key})
+        return data or []
+
+    def _set_driver_maps(self, driver_rows: List[Dict]) -> None:
+        """Maintain the legacy fetcher driver maps used by the Streamlit UI."""
+        self.drivers = {d["driver_number"]: d for d in driver_rows}
+        self.driver_numbers = {
+            d["name_acronym"]: d["driver_number"]
+            for d in driver_rows
+            if d.get("name_acronym")
+        }
     
     def stream_live_positions(self, driver_numbers: List[int], 
                             interval: float = 5.0) -> Generator[pd.DataFrame, None, None]:
