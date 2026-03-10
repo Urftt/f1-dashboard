@@ -139,6 +139,45 @@ def set_replay_speed(
     )
 
 
+def scrub_replay_to_lap(
+    state: ReplayControllerState,
+    *,
+    requested_lap: Optional[int],
+    now: datetime,
+) -> ReplayControllerState:
+    """Move replay to a requested lap while preserving controller invariants."""
+    target_lap = clamp_replay_lap(requested_lap, state.max_lap_number)
+    started_at = now if state.status == "playing" else None
+    return replace(
+        state,
+        current_lap=target_lap,
+        anchor_lap=target_lap,
+        started_at=started_at,
+    )
+
+
+def jump_replay_to_start(
+    state: ReplayControllerState,
+    *,
+    now: datetime,
+) -> ReplayControllerState:
+    """Jump replay to the earliest visible lap in the session."""
+    return scrub_replay_to_lap(state, requested_lap=1, now=now)
+
+
+def jump_replay_to_finish(
+    state: ReplayControllerState,
+    *,
+    now: datetime,
+) -> ReplayControllerState:
+    """Jump replay to the session boundary without exceeding max lap."""
+    return scrub_replay_to_lap(
+        state,
+        requested_lap=state.max_lap_number,
+        now=now,
+    )
+
+
 def get_effective_replay_lap(
     state: ReplayControllerState,
     *,

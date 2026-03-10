@@ -257,6 +257,22 @@ def filter_interval_history_for_replay(
     return visible_history.reset_index(drop=True)
 
 
+def filter_interval_history_from_controller(
+    replay_session: ReplaySession,
+    interval_history: pd.DataFrame,
+    controller_state: Optional[ReplayControllerState],
+    *,
+    now: Optional[datetime] = None,
+) -> pd.DataFrame:
+    """Resolve visible interval history directly from controller-owned replay state."""
+    replay_lap = resolve_replay_lap_from_controller(
+        replay_session,
+        controller_state,
+        now=now,
+    )
+    return filter_interval_history_for_replay(interval_history, replay_lap)
+
+
 def get_latest_known_lap(
     replay_session: ReplaySession,
     driver_number: int,
@@ -364,6 +380,22 @@ def get_replay_snapshot(
         driver_number: get_driver_snapshot(replay_session, driver_number, target_lap)
         for driver_number in driver_numbers
     }
+
+
+def get_replay_snapshot_from_controller(
+    replay_session: ReplaySession,
+    driver_numbers: List[int],
+    controller_state: Optional[ReplayControllerState],
+    *,
+    now: Optional[datetime] = None,
+) -> Dict[int, Dict[str, Any]]:
+    """Resolve driver snapshots directly from controller-owned replay state."""
+    replay_lap = resolve_replay_lap_from_controller(
+        replay_session,
+        controller_state,
+        now=now,
+    )
+    return get_replay_snapshot(replay_session, driver_numbers, replay_lap)
 
 
 def _infer_stint_start_lap(
