@@ -4,8 +4,10 @@ Process F1 timing data to calculate intervals between drivers
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from typing import Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Tuple, Optional
 import logging
+
+from replay_data import ReplayLap, ReplaySession
 
 logger = logging.getLogger(__name__)
 
@@ -210,6 +212,155 @@ class IntervalCalculator:
                 })
                 
         return events
+
+
+def resolve_replay_lap(
+    replay_session: ReplaySession,
+    replay_lap: Optional[int],
+) -> Optional[int]:
+    """Clamp a requested replay lap onto the normalized session contract."""
+    if replay_lap is None:
+        return replay_session.max_lap_number
+    if replay_lap < 1:
+        return 1
+    if replay_session.max_lap_number is None:
+        return None
+    return min(replay_lap, replay_session.max_lap_number)
+
+
+def get_latest_known_lap(
+    replay_session: ReplaySession,
+    driver_number: int,
+    replay_lap: Optional[int],
+) -> Optional[ReplayLap]:
+    """Return the latest known lap row at or before the replay position."""
+    target_lap = resolve_replay_lap(replay_session, replay_lap)
+    if target_lap is None:
+        return None
+
+    latest_match: Optional[ReplayLap] = None
+    for lap in replay_session.get_driver_laps(driver_number):
+        if lap.lap_number > target_lap:
+            break
+        latest_match = lap
+    return latest_match
+
+
+def get_current_tyre_compound(
+    replay_session: ReplaySession,
+    driver_number: int,
+    replay_lap: Optional[int],
+) -> Optional[str]:
+    """Resolve the current compound, falling back to earlier known stint rows."""
+    target_lap = resolve_replay_lap(replay_session, replay_lap)
+    if target_lap is None:
+        return None
+
+    driver_laps = replay_session.get_driver_laps(driver_number)
+    for lap in reversed(driver_laps):
+        if lap.lap_number > target_lap:
+            continue
+        if lap.compound:
+            return lap.compound
+        source_compound = lap.source_fields.get("tyre_compound")
+        if source_compound:
+            return str(source_compound)
+    return None
+
+
+def get_current_tyre_age(
+    replay_session: ReplaySession,
+    driver_number: int,
+    replay_lap: Optional[int],
+) -> Optional[int]:
+    """
+    Resolve the tyre age at the lap-granular replay position.
+
+    When the API provides tyre age on a row, the helper advances that value
+    forward within the same stint. Otherwise it falls back to a stint-start
+    inference using compound/stint boundaries.
+    """
+    target_lap = resolve_replay_lap(replay_session, replay_lap)
+    if target_lap is None:
+        return None
+
+    latest_lap = get_latest_known_lap(replay_session, driver_number, target_lap)
+    if latest_lap is None:
+        return None
+
+    lap_offset = max(target_lap - latest_lap.lap_number, 0)
+    if latest_lap.tyre_age_at_start is not None:
+        return int(max(latest_lap.tyre_age_at_start + lap_offset, 0))
+
+    stint_start_lap = _infer_stint_start_lap(replay_session, driver_number, latest_lap)
+    if stint_start_lap is None:
+        return None
+    return max(target_lap - stint_start_lap, 0)
+
+
+def get_driver_snapshot(
+    replay_session: ReplaySession,
+    driver_number: int,
+    replay_lap: Optional[int],
+) -> Dict[str, Any]:
+    """Build a stable per-driver replay snapshot for UI and test callers."""
+    target_lap = resolve_replay_lap(replay_session, replay_lap)
+    latest_lap = get_latest_known_lap(replay_session, driver_number, target_lap)
+    driver = replay_session.drivers.get(driver_number)
+
+    compound = get_current_tyre_compound(replay_session, driver_number, target_lap)
+    tyre_age = get_current_tyre_age(replay_session, driver_number, target_lap)
+
+    return {
+        "driver_number": driver_number,
+        "driver_name": driver.name_acronym if driver else str(driver_number),
+        "replay_lap": target_lap,
+        "latest_known_lap": latest_lap.lap_number if latest_lap else None,
+        "position": latest_lap.position if latest_lap else None,
+        "current_compound": compound or "Unknown",
+        "current_tyre_age": tyre_age,
+        "tyre_age_display": f"{tyre_age} laps" if tyre_age is not None else "Unknown",
+    }
+
+
+def _infer_stint_start_lap(
+    replay_session: ReplaySession,
+    driver_number: int,
+    latest_lap: ReplayLap,
+) -> Optional[int]:
+    driver_laps = replay_session.get_driver_laps(driver_number)
+    if not driver_laps:
+        return None
+
+    stint_start = latest_lap.lap_number
+    current_compound = latest_lap.compound
+    current_stint = latest_lap.stint_number
+
+    for lap in reversed(driver_laps):
+        if lap.lap_number > latest_lap.lap_number:
+            continue
+        if lap.lap_number == latest_lap.lap_number:
+            stint_start = lap.lap_number
+            continue
+
+        compound_changed = (
+            current_compound is not None
+            and lap.compound is not None
+            and lap.compound != current_compound
+        )
+        stint_changed = (
+            current_stint is not None
+            and lap.stint_number is not None
+            and lap.stint_number != current_stint
+        )
+        pit_boundary = bool(latest_lap.is_pit_out_lap)
+
+        if compound_changed or stint_changed or pit_boundary:
+            break
+
+        stint_start = lap.lap_number
+
+    return stint_start
 
 
 class RaceAnalyzer:

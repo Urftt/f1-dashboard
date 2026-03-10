@@ -77,6 +77,15 @@ class ReplaySession:
             if driver.name_acronym
         ]
 
+    @property
+    def max_lap_number(self) -> Optional[int]:
+        if not self.ordered_laps:
+            return None
+        return max(lap.lap_number for lap in self.ordered_laps)
+
+    def get_driver_laps(self, driver_number: int) -> List[ReplayLap]:
+        return self.laps_by_driver.get(driver_number, [])
+
 
 def normalize_replay_session(
     session_row: Mapping[str, Any],
