@@ -103,6 +103,23 @@ def _get_selected_driver_snapshots() -> dict[int, dict]:
     st.session_state.replay_position_lap = replay_lap
     return get_replay_snapshot(replay_session, driver_numbers, replay_lap)
 
+
+def _get_replay_position_caption() -> str | None:
+    replay_lap = st.session_state.get('replay_position_lap')
+    if replay_lap is None:
+        return None
+
+    interval_history = st.session_state.get('interval_history', pd.DataFrame())
+    source = "preloaded replay session"
+    if (
+        isinstance(interval_history, pd.DataFrame)
+        and not interval_history.empty
+        and 'lap_number' in interval_history
+    ):
+        source = "calculated interval history"
+
+    return f"Replay position is lap-granular: lap {replay_lap} from {source}"
+
 # Title and description
 st.title("🏎️ F1 Driver Interval Tracker")
 st.markdown("Track real-time intervals between drivers during F1 sessions")
@@ -282,8 +299,9 @@ with col1:
 
             replay_snapshots = _get_selected_driver_snapshots()
             if replay_snapshots:
-                replay_lap = st.session_state.get('replay_position_lap')
-                st.caption(f"Replay position is lap-granular: lap {replay_lap}")
+                replay_position_caption = _get_replay_position_caption()
+                if replay_position_caption:
+                    st.caption(replay_position_caption)
 
                 driver1_snapshot = replay_snapshots.get(_get_driver_number(driver1), {})
                 driver2_snapshot = replay_snapshots.get(_get_driver_number(driver2), {})
@@ -292,14 +310,14 @@ with col1:
                 with tyre_col1:
                     st.metric(
                         f"{driver1} Tyre",
-                        driver1_snapshot.get('current_compound', 'Unknown'),
-                        driver1_snapshot.get('tyre_age_display', 'Unknown'),
+                        driver1_snapshot.get('compound_display', 'Compound unavailable'),
+                        driver1_snapshot.get('tyre_age_display', 'Age unavailable'),
                     )
                 with tyre_col2:
                     st.metric(
                         f"{driver2} Tyre",
-                        driver2_snapshot.get('current_compound', 'Unknown'),
-                        driver2_snapshot.get('tyre_age_display', 'Unknown'),
+                        driver2_snapshot.get('compound_display', 'Compound unavailable'),
+                        driver2_snapshot.get('tyre_age_display', 'Age unavailable'),
                     )
         else:
             st.info("Load a session to see drivers")

@@ -318,8 +318,9 @@ def get_driver_snapshot(
         "latest_known_lap": latest_lap.lap_number if latest_lap else None,
         "position": latest_lap.position if latest_lap else None,
         "current_compound": compound or "Unknown",
+        "compound_display": compound or "Compound unavailable",
         "current_tyre_age": tyre_age,
-        "tyre_age_display": f"{tyre_age} laps" if tyre_age is not None else "Unknown",
+        "tyre_age_display": f"{tyre_age} laps" if tyre_age is not None else "Age unavailable",
     }
 
 
