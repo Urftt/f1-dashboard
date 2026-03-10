@@ -10,6 +10,8 @@ from typing import Literal, Optional
 
 
 ReplayStatus = Literal["stopped", "playing", "paused"]
+MIN_PLAYBACK_SPEED = 0.5
+MAX_PLAYBACK_SPEED = 5.0
 
 
 @dataclass(frozen=True)
@@ -41,7 +43,7 @@ def initialize_replay_state(
         anchor_lap=lap,
         started_at=None,
         seconds_per_lap=_normalize_positive_float(seconds_per_lap),
-        playback_speed=_normalize_positive_float(playback_speed),
+        playback_speed=_normalize_playback_speed(playback_speed),
     )
 
 
@@ -118,6 +120,25 @@ def advance_replay(
     )
 
 
+def set_replay_speed(
+    state: ReplayControllerState,
+    *,
+    playback_speed: float,
+    now: datetime,
+) -> ReplayControllerState:
+    """Rebase playback speed changes on the current effective lap."""
+    effective_lap = get_effective_replay_lap(state, now=now)
+    normalized_speed = _normalize_playback_speed(playback_speed)
+    started_at = now if state.status == "playing" else None
+    return replace(
+        state,
+        current_lap=effective_lap,
+        anchor_lap=effective_lap,
+        started_at=started_at,
+        playback_speed=normalized_speed,
+    )
+
+
 def get_effective_replay_lap(
     state: ReplayControllerState,
     *,
@@ -157,3 +178,8 @@ def _normalize_positive_float(value: float) -> float:
     if numeric <= 0:
         raise ValueError("Replay timing values must be positive")
     return numeric
+
+
+def _normalize_playback_speed(value: float) -> float:
+    numeric = _normalize_positive_float(value)
+    return max(MIN_PLAYBACK_SPEED, min(numeric, MAX_PLAYBACK_SPEED))
