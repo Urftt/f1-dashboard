@@ -367,9 +367,10 @@ def _infer_stint_start_lap(
             and lap.stint_number is not None
             and lap.stint_number != current_stint
         )
+        stint_unknown = current_stint is not None and lap.stint_number is None
         pit_boundary = bool(latest_lap.is_pit_out_lap)
 
-        if compound_changed or stint_changed or pit_boundary:
+        if compound_changed or stint_changed or stint_unknown or pit_boundary:
             break
 
         stint_start = lap.lap_number

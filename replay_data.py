@@ -208,18 +208,18 @@ def normalize_laps(
             date_end=_coerce_datetime(row.get("date")),
             position=_coerce_optional_int(row.get("position")),
             compound=_coerce_optional_str(
-                row.get("compound") or row.get("tyre_compound")
+                _first_present(row.get("compound"), row.get("tyre_compound"))
             ),
             stint_number=_coerce_optional_int(row.get("stint_number")),
             tyre_age_at_start=_coerce_optional_float(
-                row.get("tyre_age_at_start") or row.get("tyre_age")
+                _first_present(row.get("tyre_age_at_start"), row.get("tyre_age"))
             ),
             lap_duration=_coerce_optional_float(row.get("lap_duration")),
             is_pit_out_lap=_coerce_optional_bool(row.get("is_pit_out_lap")),
             source_fields={
                 field_name: row.get(field_name)
                 for field_name in TYRE_FIELD_CANDIDATES
-                if field_name in row
+                if field_name in row and not _is_missing(row.get(field_name))
             },
         )
         for (driver_number, lap_number), row in deduped.items()
@@ -258,14 +258,14 @@ def _coerce_datetime(value: Any) -> Optional[datetime]:
 
 
 def _coerce_optional_str(value: Any) -> Optional[str]:
-    if value is None:
+    if _is_missing(value):
         return None
     text = str(value).strip()
     return text or None
 
 
 def _coerce_optional_int(value: Any) -> Optional[int]:
-    if value is None or value == "":
+    if _is_missing(value):
         return None
     try:
         return int(value)
@@ -274,7 +274,7 @@ def _coerce_optional_int(value: Any) -> Optional[int]:
 
 
 def _coerce_optional_float(value: Any) -> Optional[float]:
-    if value is None or value == "":
+    if _is_missing(value):
         return None
     try:
         return float(value)
@@ -283,7 +283,7 @@ def _coerce_optional_float(value: Any) -> Optional[float]:
 
 
 def _coerce_optional_bool(value: Any) -> Optional[bool]:
-    if value is None or value == "":
+    if _is_missing(value):
         return None
     if isinstance(value, bool):
         return value
@@ -294,3 +294,19 @@ def _coerce_optional_bool(value: Any) -> Optional[bool]:
         if normalized in {"false", "0", "no"}:
             return False
     return bool(value)
+
+
+def _is_missing(value: Any) -> bool:
+    if value is None or value == "":
+        return True
+    try:
+        return bool(pd.isna(value))
+    except TypeError:
+        return False
+
+
+def _first_present(*values: Any) -> Any:
+    for value in values:
+        if not _is_missing(value):
+            return value
+    return None
