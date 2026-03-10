@@ -39,7 +39,7 @@ This roadmap turns the current non-working prototype into a reliable historical 
 
 **Requirements:** `REPL-02`, `REPL-03`, `REPL-04`, `REPL-05`
 
-**Plan progress:** 2 / 3 complete (`02-01` and `02-02` done)
+**Plan progress:** 3 / 3 complete (`02-01`, `02-02`, and `02-03` done)
 
 **Success criteria:**
 1. A user can start replay from race start and the replay clock advances through the session.
@@ -80,4 +80,4 @@ This roadmap turns the current non-working prototype into a reliable historical 
 All v1 requirements are covered exactly once.
 
 ---
-*Last updated: 2026-03-10 after completing Phase 2 Plan 02*
+*Last updated: 2026-03-10 after completing Phase 2 Plan 03*
