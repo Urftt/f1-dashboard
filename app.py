@@ -14,7 +14,12 @@ from config import (
     DRIVER_COLORS, LIVE_UPDATE_INTERVAL, SIMULATION_SPEED
 )
 from data_fetcher import F1DataFetcher, SessionRecorder
-from data_processor import IntervalCalculator, RaceAnalyzer
+from data_processor import (
+    IntervalCalculator,
+    RaceAnalyzer,
+    get_replay_snapshot,
+    resolve_replay_lap,
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -36,6 +41,67 @@ if 'selected_session' not in st.session_state:
     st.session_state.selected_session = None
 if 'last_update' not in st.session_state:
     st.session_state.last_update = None
+if 'replay_session' not in st.session_state:
+    st.session_state.replay_session = None
+if 'replay_position_lap' not in st.session_state:
+    st.session_state.replay_position_lap = None
+
+
+def _get_driver_number(driver_name: str) -> int:
+    replay_session = st.session_state.get('replay_session')
+    if replay_session:
+        for driver_number, driver in replay_session.drivers.items():
+            if driver.name_acronym == driver_name:
+                return driver_number
+    return int(st.session_state.fetcher.driver_numbers.get(driver_name, 0))
+
+
+def _resolve_current_replay_lap() -> int | None:
+    replay_session = st.session_state.get('replay_session')
+    if not replay_session:
+        return None
+
+    interval_history = st.session_state.get('interval_history', pd.DataFrame())
+    if (
+        isinstance(interval_history, pd.DataFrame)
+        and not interval_history.empty
+        and 'lap_number' in interval_history
+    ):
+        return resolve_replay_lap(
+            replay_session,
+            int(interval_history['lap_number'].max()),
+        )
+
+    return resolve_replay_lap(
+        replay_session,
+        st.session_state.get('replay_position_lap'),
+    )
+
+
+def _get_selected_driver_snapshots() -> dict[int, dict]:
+    replay_session = st.session_state.get('replay_session')
+    if not replay_session:
+        return {}
+
+    driver_names = [
+        st.session_state.get('driver1_select'),
+        st.session_state.get('driver2_select'),
+    ]
+    driver_numbers = [
+        _get_driver_number(driver_name)
+        for driver_name in driver_names
+        if driver_name
+    ]
+    driver_numbers = [driver_number for driver_number in driver_numbers if driver_number]
+    if not driver_numbers:
+        return {}
+
+    replay_lap = _resolve_current_replay_lap()
+    if replay_lap is None:
+        return {}
+
+    st.session_state.replay_position_lap = replay_lap
+    return get_replay_snapshot(replay_session, driver_numbers, replay_lap)
 
 # Title and description
 st.title("🏎️ F1 Driver Interval Tracker")
@@ -84,17 +150,14 @@ with st.sidebar:
                 session_key = int(selected_session_str.split('#')[-1].strip(')'))
                 
                 with st.spinner("Loading session data..."):
-                    if st.session_state.fetcher.load_session(session_key):
+                    replay_session = st.session_state.fetcher.load_replay_session(session_key)
+                    if replay_session:
                         st.session_state.selected_session = session_key
-                        
-                        # Load initial data
-                        drivers = st.session_state.fetcher.get_driver_list()
-                        st.session_state.available_drivers = drivers
-                        
-                        # Load lap data
-                        driver_numbers = list(st.session_state.fetcher.driver_numbers.values())
-                        lap_data = st.session_state.fetcher.get_lap_data(driver_numbers)
-                        st.session_state.calculator.update_lap_data(lap_data)
+                        st.session_state.replay_session = replay_session
+                        st.session_state.replay_position_lap = replay_session.max_lap_number
+                        st.session_state.available_drivers = replay_session.driver_acronyms
+                        st.session_state.interval_history = pd.DataFrame()
+                        st.session_state.calculator = IntervalCalculator()
                         
                         st.success("Session loaded successfully!")
                     else:
@@ -112,6 +175,8 @@ with st.sidebar:
                 if recorder.load():
                     st.session_state.recorder = recorder
                     st.session_state.selected_session = "recorded"
+                    st.session_state.replay_session = None
+                    st.session_state.replay_position_lap = None
                     
                     # Extract driver list from recording
                     drivers_dict = recorder.data['metadata'].get('drivers', {})
@@ -147,6 +212,8 @@ with st.sidebar:
                 session_key = st.session_state.latest_session['session_key']
                 if st.session_state.fetcher.load_session(session_key):
                     st.session_state.selected_session = session_key
+                    st.session_state.replay_session = None
+                    st.session_state.replay_position_lap = None
                     drivers = st.session_state.fetcher.get_driver_list()
                     st.session_state.available_drivers = drivers
                     st.success("Connected to live session!")
@@ -190,8 +257,8 @@ with col1:
             st.divider()
             if st.session_state.is_tracking and not st.session_state.interval_history.empty:
                 # Get driver numbers
-                d1_num = st.session_state.fetcher.driver_numbers.get(driver1, 0)
-                d2_num = st.session_state.fetcher.driver_numbers.get(driver2, 0)
+                d1_num = _get_driver_number(driver1)
+                d2_num = _get_driver_number(driver2)
                 
                 # Get current stats
                 current_stats = st.session_state.calculator.get_current_interval(d1_num, d2_num)
@@ -212,6 +279,28 @@ with col1:
                 
                 # Show positions
                 st.caption(f"P{current_stats['position_d1']} vs P{current_stats['position_d2']}")
+
+            replay_snapshots = _get_selected_driver_snapshots()
+            if replay_snapshots:
+                replay_lap = st.session_state.get('replay_position_lap')
+                st.caption(f"Replay position is lap-granular: lap {replay_lap}")
+
+                driver1_snapshot = replay_snapshots.get(_get_driver_number(driver1), {})
+                driver2_snapshot = replay_snapshots.get(_get_driver_number(driver2), {})
+
+                tyre_col1, tyre_col2 = st.columns(2)
+                with tyre_col1:
+                    st.metric(
+                        f"{driver1} Tyre",
+                        driver1_snapshot.get('current_compound', 'Unknown'),
+                        driver1_snapshot.get('tyre_age_display', 'Unknown'),
+                    )
+                with tyre_col2:
+                    st.metric(
+                        f"{driver2} Tyre",
+                        driver2_snapshot.get('current_compound', 'Unknown'),
+                        driver2_snapshot.get('tyre_age_display', 'Unknown'),
+                    )
         else:
             st.info("Load a session to see drivers")
     else:
@@ -261,8 +350,8 @@ with col2:
         # Run tracking loop
         if st.session_state.is_tracking:
             # Get driver numbers
-            d1_num = st.session_state.fetcher.driver_numbers.get(st.session_state.driver1_select, 0)
-            d2_num = st.session_state.fetcher.driver_numbers.get(st.session_state.driver2_select, 0)
+            d1_num = _get_driver_number(st.session_state.driver1_select)
+            d2_num = _get_driver_number(st.session_state.driver2_select)
             
             # Create a placeholder for updates
             with info_container:
@@ -274,14 +363,31 @@ with col2:
                 try:
                     # Fetch latest data based on source
                     if data_source == "Historical Session":
-                        # For historical, load all lap data at once
+                        # Historical replay stays lap-granular in Phase 1.
                         if st.session_state.interval_history.empty:
-                            lap_data = st.session_state.fetcher.get_lap_data([d1_num, d2_num])
+                            replay_session = st.session_state.get('replay_session')
+                            if replay_session is None:
+                                raise ValueError("Historical replay session is not loaded")
+
+                            lap_data = pd.DataFrame(
+                                [
+                                    {
+                                        'driver_number': lap.driver_number,
+                                        'lap_number': lap.lap_number,
+                                        'date_start': lap.date_start,
+                                        'position': lap.position,
+                                    }
+                                    for driver_number in [d1_num, d2_num]
+                                    for lap in replay_session.get_driver_laps(driver_number)
+                                ]
+                            )
                             st.session_state.calculator.update_lap_data(lap_data)
                             
                             # Calculate full history
                             history = st.session_state.calculator.calculate_interval_history(d1_num, d2_num)
                             st.session_state.interval_history = history
+                            if not history.empty:
+                                st.session_state.replay_position_lap = int(history['lap_number'].max())
                             
                             # Update plot with full data
                             if not history.empty:

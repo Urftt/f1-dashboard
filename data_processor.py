@@ -323,6 +323,19 @@ def get_driver_snapshot(
     }
 
 
+def get_replay_snapshot(
+    replay_session: ReplaySession,
+    driver_numbers: List[int],
+    replay_lap: Optional[int],
+) -> Dict[int, Dict[str, Any]]:
+    """Return driver snapshots keyed by driver number for one replay lap."""
+    target_lap = resolve_replay_lap(replay_session, replay_lap)
+    return {
+        driver_number: get_driver_snapshot(replay_session, driver_number, target_lap)
+        for driver_number in driver_numbers
+    }
+
+
 def _infer_stint_start_lap(
     replay_session: ReplaySession,
     driver_number: int,
