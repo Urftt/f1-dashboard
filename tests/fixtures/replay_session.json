@@ -1,0 +1,131 @@
+{
+  "session": {
+    "session_key": 999001,
+    "session_name": "British Grand Prix",
+    "meeting_name": "Silverstone",
+    "country_name": "United Kingdom",
+    "date_start": "2024-07-07T14:00:00"
+  },
+  "drivers": [
+    {
+      "driver_number": 16,
+      "name_acronym": "LEC",
+      "broadcast_name": "C LECLERC",
+      "full_name": "Charles Leclerc",
+      "team_name": "Ferrari",
+      "country_code": "MON"
+    },
+    {
+      "driver_number": 44,
+      "name_acronym": "HAM",
+      "broadcast_name": "L HAMILTON",
+      "full_name": "Lewis Hamilton",
+      "team_name": "Mercedes",
+      "country_code": "GBR"
+    }
+  ],
+  "laps": [
+    {
+      "driver_number": 44,
+      "lap_number": 1,
+      "date_start": "2024-07-07T14:00:00",
+      "date": "2024-07-07T14:01:30",
+      "position": 1,
+      "compound": "MEDIUM",
+      "stint_number": 1,
+      "tyre_age_at_start": 0,
+      "lap_duration": 90.0,
+      "is_pit_out_lap": false
+    },
+    {
+      "driver_number": 16,
+      "lap_number": 1,
+      "date_start": "2024-07-07T14:00:02",
+      "date": "2024-07-07T14:01:33",
+      "position": 2,
+      "lap_duration": 91.0,
+      "is_pit_out_lap": false
+    },
+    {
+      "driver_number": 44,
+      "lap_number": 2,
+      "date_start": "2024-07-07T14:01:31",
+      "date": "2024-07-07T14:03:02",
+      "position": 2,
+      "compound": "MEDIUM",
+      "stint_number": 1,
+      "tyre_age_at_start": 1,
+      "lap_duration": 91.0,
+      "is_pit_out_lap": false
+    },
+    {
+      "driver_number": 44,
+      "lap_number": 2,
+      "date_start": "2024-07-07T14:01:32",
+      "date": "2024-07-07T14:03:01",
+      "position": 1,
+      "compound": "MEDIUM",
+      "stint_number": 1,
+      "tyre_age_at_start": 1,
+      "lap_duration": 89.0,
+      "is_pit_out_lap": false
+    },
+    {
+      "driver_number": 16,
+      "lap_number": 2,
+      "date_start": "2024-07-07T14:01:34",
+      "date": "2024-07-07T14:03:06",
+      "position": 2,
+      "compound": "HARD",
+      "stint_number": 1,
+      "tyre_age_at_start": 0,
+      "lap_duration": 92.0,
+      "is_pit_out_lap": false
+    },
+    {
+      "driver_number": 44,
+      "lap_number": 3,
+      "date_start": "2024-07-07T14:03:03",
+      "date": "2024-07-07T14:04:33",
+      "position": 1,
+      "compound": "MEDIUM",
+      "stint_number": 1,
+      "tyre_age_at_start": 2,
+      "lap_duration": 90.0,
+      "is_pit_out_lap": false
+    },
+    {
+      "driver_number": 16,
+      "lap_number": 3,
+      "date_start": "2024-07-07T14:03:07",
+      "date": "2024-07-07T14:04:38",
+      "position": 2,
+      "tyre_compound": "HARD",
+      "stint_number": 1,
+      "lap_duration": 91.0,
+      "is_pit_out_lap": false
+    },
+    {
+      "driver_number": 44,
+      "lap_number": 4,
+      "date_start": "2024-07-07T14:04:50",
+      "date": "2024-07-07T14:06:30",
+      "position": 1,
+      "compound": "SOFT",
+      "stint_number": 2,
+      "tyre_age_at_start": 0,
+      "lap_duration": 100.0,
+      "is_pit_out_lap": true
+    },
+    {
+      "driver_number": 16,
+      "lap_number": 4,
+      "date_start": "2024-07-07T14:04:39",
+      "date": "2024-07-07T14:06:11",
+      "position": 2,
+      "stint_number": 1,
+      "lap_duration": 92.0,
+      "is_pit_out_lap": false
+    }
+  ]
+}
