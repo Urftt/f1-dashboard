@@ -7,7 +7,7 @@
 
 ### Replay
 
-- [ ] **REPL-01**: User can load a historical race session for replay.
+- [x] **REPL-01**: User can load a historical race session for replay.
 - [ ] **REPL-02**: User can start replay from race start and have dashboard state advance over time.
 - [ ] **REPL-03**: User can pause and resume replay without losing the current replay position.
 - [ ] **REPL-04**: User can change replay speed while a replay is running.
@@ -61,7 +61,7 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REPL-01 | Phase 1 | Pending |
+| REPL-01 | Phase 1 | Complete |
 | REPL-02 | Phase 2 | Pending |
 | REPL-03 | Phase 2 | Pending |
 | REPL-04 | Phase 2 | Pending |
@@ -84,4 +84,4 @@
 
 ---
 *Requirements defined: 2026-03-10*
-*Last updated: 2026-03-10 after milestone v1.0 requirement drafting*
+*Last updated: 2026-03-10 after completing Phase 1 Plan 01*
