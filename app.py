@@ -249,6 +249,9 @@ def historical_replay_tick() -> None:
     updated = advance_replay_state(st.session_state, now=datetime.now())
     st.session_state.last_update = datetime.now()
 
+    # Manual verification note: Play should advance one lap at a time, Pause should freeze
+    # the current lap, Resume should continue from that lap, and speed/scrub changes should
+    # update both the chart prefix and tyre snapshots without jumping to the finish.
     # Streamlit fragments drive the tick; a full rerun keeps the chart and KPIs aligned.
     if updated.current_lap != previous_lap or updated.status != previous_status:
         st.rerun()

@@ -3,21 +3,30 @@ from datetime import timedelta
 import pandas as pd
 
 from data_processor import (
+    build_replay_view_model,
     filter_interval_history_for_replay,
     filter_interval_history_from_controller,
+    get_cached_replay_interval_history,
     get_replay_snapshot_from_controller,
     resolve_replay_lap_from_controller,
 )
 from replay_controls import (
     advance_replay,
+    advance_replay_state,
     initialize_replay_state,
+    initialize_replay_session_state,
     jump_replay_to_finish,
     jump_replay_to_start,
     pause_replay,
+    restart_replay_state,
     resume_replay,
+    resume_replay_state,
     scrub_replay_to_lap,
+    scrub_replay_state,
+    set_replay_speed_state,
     set_replay_speed,
     start_replay,
+    start_replay_state,
 )
 
 
@@ -265,3 +274,94 @@ def test_scrubbed_controller_snapshot_uses_new_visible_lap(replay_session, repla
     assert snapshot[16]["latest_known_lap"] == 3
     assert snapshot[44]["replay_lap"] == 3
     assert snapshot[44]["latest_known_lap"] == 3
+
+
+def test_session_state_helpers_initialize_at_lap_one_and_first_play_does_not_jump_to_finish(
+    replay_session,
+    replay_clock_start,
+):
+    session_state = {}
+
+    initialized = initialize_replay_session_state(
+        session_state,
+        replay_session.max_lap_number,
+    )
+    started = start_replay_state(session_state, now=replay_clock_start)
+    advanced = advance_replay_state(
+        session_state,
+        now=replay_clock_start + timedelta(seconds=1),
+    )
+
+    assert initialized.current_lap == 1
+    assert session_state["replay_status"] == "playing"
+    assert started.current_lap == 1
+    assert advanced.current_lap == 2
+    assert advanced.current_lap != replay_session.max_lap_number
+
+
+def test_cached_pair_history_refreshes_for_new_driver_pair(replay_session):
+    history_cache = {}
+
+    first_key, first_history, first_refreshed = get_cached_replay_interval_history(
+        history_cache,
+        session_key=999001,
+        replay_session=replay_session,
+        driver1_num=16,
+        driver2_num=44,
+    )
+    second_key, second_history, second_refreshed = get_cached_replay_interval_history(
+        history_cache,
+        session_key=999001,
+        replay_session=replay_session,
+        driver1_num=44,
+        driver2_num=16,
+    )
+    third_key, third_history, third_refreshed = get_cached_replay_interval_history(
+        history_cache,
+        session_key=999001,
+        replay_session=replay_session,
+        driver1_num=16,
+        driver2_num=1,
+    )
+
+    assert first_refreshed is True
+    assert second_refreshed is False
+    assert third_refreshed is True
+    assert first_key == second_key
+    assert third_key != first_key
+    assert not first_history.empty
+    assert third_history.empty
+
+
+def test_replay_view_model_keeps_visible_history_and_snapshots_on_same_lap(
+    replay_session,
+    replay_controller_state,
+    replay_clock_start,
+):
+    full_history = pd.DataFrame(
+        [
+            {"lap_number": 1, "interval": 0.5, "position_d1": 1, "position_d2": 2, "interval_change": None, "closing_rate": None},
+            {"lap_number": 2, "interval": 0.8, "position_d1": 1, "position_d2": 2, "interval_change": 0.3, "closing_rate": None},
+            {"lap_number": 3, "interval": 1.1, "position_d1": 1, "position_d2": 2, "interval_change": 0.3, "closing_rate": 0.3},
+            {"lap_number": 4, "interval": 1.4, "position_d1": 1, "position_d2": 2, "interval_change": 0.3, "closing_rate": 0.3},
+        ]
+    )
+    scrubbed = scrub_replay_to_lap(
+        replay_controller_state,
+        requested_lap=3,
+        now=replay_clock_start,
+    )
+
+    view_model = build_replay_view_model(
+        replay_session,
+        [16, 44],
+        full_history,
+        scrubbed,
+        now=replay_clock_start,
+    )
+
+    assert view_model["replay_lap"] == 3
+    assert list(view_model["visible_history"]["lap_number"]) == [1, 2, 3]
+    assert view_model["stats"]["lap"] == 3
+    assert view_model["snapshots"][16]["latest_known_lap"] == 3
+    assert view_model["snapshots"][44]["latest_known_lap"] == 3
