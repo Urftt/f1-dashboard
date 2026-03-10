@@ -22,8 +22,8 @@
 ### Race Stats
 
 - [ ] **STAT-01**: User can view the latest completed lap time for each selected driver at the current replay position.
-- [ ] **STAT-02**: User can view the current tyre compound for each selected driver at the current replay position.
-- [ ] **STAT-03**: User can view the current tyre age for each selected driver at the current replay position.
+- [x] **STAT-02**: User can view the current tyre compound for each selected driver at the current replay position.
+- [x] **STAT-03**: User can view the current tyre age for each selected driver at the current replay position.
 - [ ] **STAT-04**: User can see the race statistics update as replay time advances.
 
 ### Reliability
@@ -70,8 +70,8 @@
 | COMP-02 | Phase 3 | Pending |
 | COMP-03 | Phase 3 | Pending |
 | STAT-01 | Phase 3 | Pending |
-| STAT-02 | Phase 1 | Pending |
-| STAT-03 | Phase 1 | Pending |
+| STAT-02 | Phase 1 | Complete |
+| STAT-03 | Phase 1 | Complete |
 | STAT-04 | Phase 3 | Pending |
 | RELY-01 | Phase 4 | Pending |
 | RELY-02 | Phase 4 | Pending |
@@ -84,4 +84,4 @@
 
 ---
 *Requirements defined: 2026-03-10*
-*Last updated: 2026-03-10 after completing Phase 1 Plan 01*
+*Last updated: 2026-03-10 after completing Phase 1 Plan 02*

@@ -25,7 +25,7 @@ This roadmap turns the current non-working prototype into a reliable historical 
 
 **Requirements:** `REPL-01`, `STAT-02`, `STAT-03`, `RELY-03`
 
-**Plan progress:** 1 / 3 complete (`01-01` done, next: `01-02`)
+**Plan progress:** 2 / 3 complete (`01-01` and `01-02` done, next: `01-03`)
 
 **Success criteria:**
 1. A user can select a historical race session and the app can preload the datasets needed for replay.
@@ -78,4 +78,4 @@ This roadmap turns the current non-working prototype into a reliable historical 
 All v1 requirements are covered exactly once.
 
 ---
-*Last updated: 2026-03-10 after completing Phase 1 Plan 01*
+*Last updated: 2026-03-10 after completing Phase 1 Plan 02*
