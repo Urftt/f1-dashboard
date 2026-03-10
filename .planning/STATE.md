@@ -9,10 +9,10 @@ See: `.planning/PROJECT.md` (updated 2026-03-10)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-10 — Milestone v1.0 started
+Phase: 1
+Plan: Replay Data Foundation
+Status: Roadmap proposed for approval
+Last activity: 2026-03-10 — Drafted milestone v1.0 roadmap
 
 ## Accumulated Context
 

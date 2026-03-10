@@ -61,26 +61,26 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REPL-01 | Unmapped | Pending |
-| REPL-02 | Unmapped | Pending |
-| REPL-03 | Unmapped | Pending |
-| REPL-04 | Unmapped | Pending |
-| REPL-05 | Unmapped | Pending |
-| COMP-01 | Unmapped | Pending |
-| COMP-02 | Unmapped | Pending |
-| COMP-03 | Unmapped | Pending |
-| STAT-01 | Unmapped | Pending |
-| STAT-02 | Unmapped | Pending |
-| STAT-03 | Unmapped | Pending |
-| STAT-04 | Unmapped | Pending |
-| RELY-01 | Unmapped | Pending |
-| RELY-02 | Unmapped | Pending |
-| RELY-03 | Unmapped | Pending |
+| REPL-01 | Phase 1 | Pending |
+| REPL-02 | Phase 2 | Pending |
+| REPL-03 | Phase 2 | Pending |
+| REPL-04 | Phase 2 | Pending |
+| REPL-05 | Phase 2 | Pending |
+| COMP-01 | Phase 3 | Pending |
+| COMP-02 | Phase 3 | Pending |
+| COMP-03 | Phase 3 | Pending |
+| STAT-01 | Phase 3 | Pending |
+| STAT-02 | Phase 1 | Pending |
+| STAT-03 | Phase 1 | Pending |
+| STAT-04 | Phase 3 | Pending |
+| RELY-01 | Phase 4 | Pending |
+| RELY-02 | Phase 4 | Pending |
+| RELY-03 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 15 total
-- Mapped to phases: 0
-- Unmapped: 15 ⚠️
+- Mapped to phases: 15
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-10*
