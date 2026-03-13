@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import type Plotly from 'plotly.js'
 import { useSessionStore } from '@/stores/sessionStore'
 
 /**
@@ -21,11 +22,17 @@ export interface PlotlyTrace {
  * - lapNumbers: shared lap numbers for both drivers
  * - gaps: gap in seconds per lap (positive = driverA leading, i.e. lower session time)
  * - segments: Plotly trace objects split by leader with team colors
+ * - pitStopShapes: vertical line shapes for each pit stop (progressive reveal)
+ * - pitStopHoverTraces: invisible scatter traces providing pit stop hover tooltips
+ * - scShapes: rectangular shading shapes for SC/VSC/RED periods
  */
 export interface GapDataResult {
   lapNumbers: number[]
   gaps: number[]
   segments: PlotlyTrace[]
+  pitStopShapes: Partial<Plotly.Shape>[]
+  pitStopHoverTraces: Partial<Plotly.PlotData>[]
+  scShapes: Partial<Plotly.Shape>[]
 }
 
 /**
@@ -40,12 +47,14 @@ export function useGapData(): GapDataResult {
   const laps = useSessionStore((s) => s.laps)
   const drivers = useSessionStore((s) => s.drivers)
   const selectedDrivers = useSessionStore((s) => s.selectedDrivers)
+  const currentLap = useSessionStore((s) => s.currentLap)
+  const safetyCarPeriods = useSessionStore((s) => s.safetyCarPeriods)
 
-  return useMemo(() => {
-    const empty: GapDataResult = { lapNumbers: [], gaps: [], segments: [] }
+  const gapSegments = useMemo(() => {
+    const emptySegments = { lapNumbers: [] as number[], gaps: [] as number[], segments: [] as PlotlyTrace[] }
 
     const [driverA, driverB] = selectedDrivers
-    if (driverA === null || driverB === null) return empty
+    if (driverA === null || driverB === null) return emptySegments
 
     // Filter to valid rows (non-null LapNumber and Time) for each driver
     const lapsA = laps.filter(
@@ -70,7 +79,7 @@ export function useGapData(): GapDataResult {
       .filter((lap) => mapB.has(lap))
       .sort((a, b) => a - b)
 
-    if (sharedLaps.length === 0) return empty
+    if (sharedLaps.length === 0) return emptySegments
 
     const lapNumbers: number[] = []
     const gaps: number[] = []
@@ -130,6 +139,179 @@ export function useGapData(): GapDataResult {
 
     return { lapNumbers, gaps, segments }
   }, [laps, drivers, selectedDrivers])
+
+  const annotationShapes = useMemo(() => {
+    const emptyAnnotations = {
+      pitStopShapes: [] as Partial<Plotly.Shape>[],
+      pitStopHoverTraces: [] as Partial<Plotly.PlotData>[],
+      scShapes: [] as Partial<Plotly.Shape>[],
+    }
+
+    const [driverA, driverB] = selectedDrivers
+    if (driverA === null || driverB === null) return emptyAnnotations
+
+    const driverMap = new Map(drivers.map((d) => [d.abbreviation, d]))
+    const colorA = driverMap.get(driverA)?.teamColor ?? '#888888'
+    const colorB = driverMap.get(driverB)?.teamColor ?? '#888888'
+
+    // Find pit laps per driver (filtered by currentLap for progressive reveal)
+    const pitLapsA = laps
+      .filter(
+        (l) =>
+          l.Driver === driverA &&
+          l.LapNumber !== null &&
+          l.PitInTime !== null &&
+          l.LapNumber <= currentLap
+      )
+      .map((l) => l.LapNumber as number)
+
+    const pitLapsB = laps
+      .filter(
+        (l) =>
+          l.Driver === driverB &&
+          l.LapNumber !== null &&
+          l.PitInTime !== null &&
+          l.LapNumber <= currentLap
+      )
+      .map((l) => l.LapNumber as number)
+
+    // Detect same-lap collisions
+    const setA = new Set(pitLapsA)
+    const setB = new Set(pitLapsB)
+    const collision = new Set([...setA].filter((lap) => setB.has(lap)))
+
+    const pitStopShapes: Partial<Plotly.Shape>[] = []
+    const pitStopHoverTraces: Partial<Plotly.PlotData>[] = []
+
+    // Build shapes and hover traces for driverA pits
+    for (const pitLap of pitLapsA) {
+      const xPos = collision.has(pitLap) ? pitLap - 0.15 : pitLap
+
+      pitStopShapes.push({
+        type: 'line',
+        x0: xPos,
+        x1: xPos,
+        y0: 0,
+        y1: 1,
+        xref: 'x',
+        yref: 'paper' as const,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        layer: 'above' as any,
+        line: { color: colorA, width: 1, dash: 'solid' as const },
+        label: {
+          text: driverA,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          textposition: 'top left' as any,
+          font: { color: colorA, size: 9 },
+        },
+      })
+
+      // Invisible hover trace: two points spanning y-range, mode lines, width 0
+      pitStopHoverTraces.push({
+        x: [xPos, xPos],
+        y: [0, 1],
+        type: 'scatter' as const,
+        mode: 'lines' as const,
+        line: { width: 0, color: 'transparent' },
+        hoverinfo: 'text' as const,
+        text: [`${driverA} pit — Lap ${pitLap}`, `${driverA} pit — Lap ${pitLap}`],
+        showlegend: false,
+        // Use paper yaxis so hover spans full chart height
+        yaxis: 'y',
+      } as Partial<Plotly.PlotData>)
+    }
+
+    // Build shapes and hover traces for driverB pits
+    for (const pitLap of pitLapsB) {
+      const xPos = collision.has(pitLap) ? pitLap + 0.15 : pitLap
+
+      pitStopShapes.push({
+        type: 'line',
+        x0: xPos,
+        x1: xPos,
+        y0: 0,
+        y1: 1,
+        xref: 'x',
+        yref: 'paper' as const,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        layer: 'above' as any,
+        line: { color: colorB, width: 1, dash: 'solid' as const },
+        label: {
+          text: driverB,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          textposition: 'top left' as any,
+          font: { color: colorB, size: 9 },
+        },
+      })
+
+      pitStopHoverTraces.push({
+        x: [xPos, xPos],
+        y: [0, 1],
+        type: 'scatter' as const,
+        mode: 'lines' as const,
+        line: { width: 0, color: 'transparent' },
+        hoverinfo: 'text' as const,
+        text: [`${driverB} pit — Lap ${pitLap}`, `${driverB} pit — Lap ${pitLap}`],
+        showlegend: false,
+        yaxis: 'y',
+      } as Partial<Plotly.PlotData>)
+    }
+
+    // Build SC/VSC/RED shapes (progressive reveal + growing active periods)
+    const scShapes: Partial<Plotly.Shape>[] = []
+
+    for (const period of safetyCarPeriods) {
+      // Skip periods that haven't started yet
+      if (period.start_lap > currentLap) continue
+
+      // Clamp end_lap to currentLap so active periods grow with replay
+      const x1 = Math.min(period.end_lap, currentLap)
+
+      let fillcolor: string
+      let lineStyle: Partial<Plotly.ShapeLine> = { width: 0 }
+      let labelColor: string
+
+      if (period.type === 'SC') {
+        fillcolor = 'rgba(255, 200, 0, 0.18)'
+        labelColor = 'rgba(255,200,0,0.7)'
+      } else if (period.type === 'VSC') {
+        fillcolor = 'rgba(255, 200, 0, 0.08)'
+        labelColor = 'rgba(255,200,0,0.7)'
+      } else {
+        // RED
+        fillcolor = 'rgba(255, 0, 0, 0.25)'
+        lineStyle = { color: 'rgba(255,0,0,0.5)', width: 2 }
+        labelColor = 'rgba(255,0,0,0.7)'
+      }
+
+      scShapes.push({
+        type: 'rect',
+        x0: period.start_lap,
+        x1,
+        y0: 0,
+        y1: 1,
+        xref: 'x',
+        yref: 'paper' as const,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        layer: 'below' as any,
+        fillcolor,
+        line: lineStyle,
+        label: {
+          text: period.type,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          textposition: 'top left' as any,
+          font: { color: labelColor, size: 10 },
+        },
+      })
+    }
+
+    return { pitStopShapes, pitStopHoverTraces, scShapes }
+  }, [laps, drivers, selectedDrivers, currentLap, safetyCarPeriods])
+
+  return {
+    ...gapSegments,
+    ...annotationShapes,
+  }
 }
 
 /**
