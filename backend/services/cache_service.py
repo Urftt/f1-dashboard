@@ -10,19 +10,20 @@ def is_session_cached(year: int, event: str, session_type: str) -> bool:
     """Best-effort check whether a session's cache files exist on disk.
 
     FastF1 does not expose a public is_cached() API.
-    We use a filesystem glob check as a pragmatic indicator.
+    We use a filesystem check as a pragmatic indicator.
+    Comparison is case-insensitive.
     May have false positives if partial cache files exist.
     """
     if not CACHE_DIR.exists():
         return False
 
-    # FastF1 caches files with the session type in the filename
-    # Search for any file containing the session_type identifier
-    session_type_normalized = session_type.lower().replace(" ", "_")
-    candidates = list(CACHE_DIR.glob(f"**/*{session_type_normalized}*"))
-    if candidates:
-        return True
+    session_type_lower = session_type.lower().replace(" ", "_")
 
-    # Also check with original casing (FastF1 may use different conventions)
-    candidates = list(CACHE_DIR.glob(f"**/*{session_type}*"))
-    return len(candidates) > 0
+    # Scan all files in the cache directory tree for a case-insensitive match
+    for candidate in CACHE_DIR.rglob("*"):
+        if candidate.is_file():
+            filename_lower = candidate.name.lower()
+            if session_type_lower in filename_lower:
+                return True
+
+    return False
