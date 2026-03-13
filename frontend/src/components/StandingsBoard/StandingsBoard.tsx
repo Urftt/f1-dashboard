@@ -38,7 +38,7 @@ function StandingRowItem({ row, mode }: { row: StandingRow; mode: GapMode }) {
     >
       {/* Position */}
       <div className="w-9 flex items-center gap-0.5 text-sm font-mono shrink-0">
-        <span>{row.position}</span>
+        <span>{isInactive && row.position >= 99 ? '—' : row.position}</span>
         {row.prevPosition !== null && row.position < row.prevPosition && (
           <ChevronUp size={12} className="text-green-500" />
         )}
@@ -112,7 +112,7 @@ export function StandingsBoard() {
 
   return (
     <Tooltip.Provider>
-      <div className="h-full bg-card border border-border rounded-lg flex flex-col">
+      <div className="h-full max-h-[360px] bg-card border border-border rounded-lg flex flex-col">
         {/* Header */}
         <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border shrink-0">
           <div className="w-9 text-xs text-muted-foreground uppercase tracking-wider shrink-0">
