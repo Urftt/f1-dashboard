@@ -21,7 +21,19 @@ def get_completed_events(year: int) -> list[dict]:
     """
     schedule = fastf1.get_event_schedule(year, include_testing=False)
     now = datetime.now(timezone.utc)
-    past = schedule[schedule["EventDate"] < now]
+
+    # FastF1 EventDate may be tz-naive (datetime64[ns]) — normalize for comparison.
+    # Use tz_localize if tz-naive, strip tzinfo if tz-aware, then compare as UTC.
+    event_dates = schedule["EventDate"]
+    if hasattr(event_dates.dtype, "tz") and event_dates.dtype.tz is not None:
+        # Already tz-aware — convert to UTC naive for comparison
+        now_naive = now.replace(tzinfo=None)
+        event_dates_cmp = event_dates.dt.tz_convert("UTC").dt.tz_localize(None)
+        past = schedule[event_dates_cmp < now_naive]
+    else:
+        # tz-naive — compare with naive datetime
+        now_naive = now.replace(tzinfo=None)
+        past = schedule[event_dates < now_naive]
     return [
         {
             "round": int(row["RoundNumber"]),
