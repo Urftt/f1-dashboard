@@ -59,3 +59,8 @@ tmp/
 
 # Backend FastF1 cache (500+ MB)
 backend/cache/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
