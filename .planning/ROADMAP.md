@@ -45,7 +45,7 @@ Plans:
   2. User can hover over the chart and see exact gap values and lap numbers in a tooltip
   3. User can press play and watch the chart cursor advance lap by lap at the selected speed (0.5x, 1x, 2x, 4x); pressing pause freezes it
   4. User can drag the lap scrubber to any lap and the chart cursor jumps to that lap instantly
-**Plans:** 4 plans
+**Plans:** 3/4 plans executed
 
 Plans:
 - [ ] 02-01-PLAN.md — Data layer: install Plotly, extend Zustand store with replay state, driver lookups, gap calculation hook
@@ -82,6 +82,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Backend Foundation | 4/4 | Complete   | 2026-03-13 |
-| 2. Gap Chart + Replay Engine | 0/4 | Planning complete | - |
+| 2. Gap Chart + Replay Engine | 3/4 | In Progress|  |
 | 3. Standings Board | 0/TBD | Not started | - |
 | 4. Chart Enhancements | 0/TBD | Not started | - |

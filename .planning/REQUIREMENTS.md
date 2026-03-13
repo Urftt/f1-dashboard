@@ -19,7 +19,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **GAP-01**: User can select two drivers from the loaded session
 - [x] **GAP-02**: User sees an interactive gap-over-time chart for the selected pair
-- [ ] **GAP-03**: User can hover to see exact gap values and lap numbers
+- [x] **GAP-03**: User can hover to see exact gap values and lap numbers
 - [ ] **GAP-04**: User sees vertical annotations on laps where either driver pitted
 - [ ] **GAP-05**: User sees yellow shading on laps under Safety Car or VSC
 
@@ -28,7 +28,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **REPL-01**: User can start/pause a lap-by-lap replay of the session
 - [x] **REPL-02**: User can set replay speed (0.5x, 1x, 2x, 4x)
 - [x] **REPL-03**: User can jump to any lap via a scrubber control
-- [ ] **REPL-04**: Gap chart shows a vertical cursor at the current replay lap
+- [x] **REPL-04**: Gap chart shows a vertical cursor at the current replay lap
 
 ### Standings
 
@@ -75,13 +75,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SESS-05 | Phase 1 | Complete |
 | GAP-01 | Phase 2 | Complete |
 | GAP-02 | Phase 2 | Complete |
-| GAP-03 | Phase 2 | Pending |
+| GAP-03 | Phase 2 | Complete |
 | GAP-04 | Phase 4 | Pending |
 | GAP-05 | Phase 4 | Pending |
 | REPL-01 | Phase 2 | Complete |
 | REPL-02 | Phase 2 | Complete |
 | REPL-03 | Phase 2 | Complete |
-| REPL-04 | Phase 2 | Pending |
+| REPL-04 | Phase 2 | Complete |
 | STND-01 | Phase 3 | Pending |
 | STND-02 | Phase 3 | Pending |
 | STND-03 | Phase 3 | Pending |

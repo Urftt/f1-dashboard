@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-03-13T13:04:16.550Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-03-13T13:04:36.175Z"
 last_activity: 2026-03-13 — Roadmap created, all 18 v1 requirements mapped across 4 phases
 progress:
   total_phases: 4
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-backend-foundation P04 | 60min | 1 tasks | 1 files |
 | Phase 02-gap-chart-replay-engine P01 | 8min | 2 tasks | 5 files |
 | Phase 02-gap-chart-replay-engine P03 | 2min | 2 tasks | 2 files |
+| Phase 02-gap-chart-replay-engine P02 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,7 @@ Recent decisions affecting current work:
 - [Phase 02-gap-chart-replay-engine]: lapRef.current updated every render; only isPlaying, replaySpeed, maxLap in useEffect deps — avoids stale closure while keeping interval lifecycle correct
 - [Phase 02-gap-chart-replay-engine]: HTML range input used for scrubber instead of @base-ui Slider — simpler, sufficient for integer lap steps
 - [Phase 02-gap-chart-replay-engine]: Auto-restart: pressing play when currentLap >= maxLap resets to lap 1 then plays — prevents dead play button at race end
+- [Phase 02-gap-chart-replay-engine]: Plotly dark theme via template: plotly_dark with transparent bg; yref paper on cursor shape for full-height span
 
 ### Critical Pitfalls (from research)
 
@@ -98,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T13:04:16.548Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-03-13T13:04:36.174Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
