@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Strategy & Analysis Dashboard
 status: planning
-stopped_at: Phase 5 context gathered
-last_updated: "2026-03-13T23:00:21.905Z"
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-03-13T23:20:29.613Z"
 last_activity: 2026-03-13 — Roadmap created for v1.1
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 2
+  completed_plans: 1
   percent: 0
 ---
 
@@ -43,6 +43,9 @@ Key decisions carrying forward into v1.1:
 - Use `scattergl` (not `scatter`) for position chart from the start — 20 traces require WebGL
 - Compute interval-to-car-ahead from `Time` + `Position` columns — `IntervalToPositionAhead` not in public FastF1 API
 - Group stints by `Stint` integer (not compound) — FastF1 v3.6.0+ has `None` compound values that fragment groupings
+- [Phase 05-dashboard-layout-stint-timeline]: Group stints by Stint integer column (not Compound) to handle FastF1 None values
+- [Phase 05-dashboard-layout-stint-timeline]: Export pure functions from hooks for direct testability without React mocking
+- [Phase 05-dashboard-layout-stint-timeline]: Three-memo split in useStintData: allStints/[laps], chart data/[currentLap+], cursor/[currentLap]
 
 ### Pending Todos
 
@@ -54,6 +57,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-13T23:00:21.903Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-dashboard-layout-stint-timeline/05-CONTEXT.md
+Last session: 2026-03-13T23:20:29.611Z
+Stopped at: Completed 05-01-PLAN.md
+Resume file: None

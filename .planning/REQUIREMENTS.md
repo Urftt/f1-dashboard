@@ -9,7 +9,7 @@ Requirements for v1.1 Strategy & Analysis Dashboard. Each maps to roadmap phases
 
 ### Strategy Charts
 
-- [ ] **STRAT-01**: User can view a stint timeline showing all drivers' tire stints as horizontal bars (compound-colored, lap range)
+- [x] **STRAT-01**: User can view a stint timeline showing all drivers' tire stints as horizontal bars (compound-colored, lap range)
 - [ ] **STRAT-02**: User can view a lap time chart plotting selected drivers' lap times as a scatter plot across laps
 - [ ] **STRAT-03**: User can see per-stint trend lines overlaid on the lap time chart to visualize degradation rate
 
@@ -21,7 +21,7 @@ Requirements for v1.1 Strategy & Analysis Dashboard. Each maps to roadmap phases
 
 ### Cross-Chart Enhancements
 
-- [ ] **ENHANCE-01**: All charts show a replay cursor (vertical line) synced to the current replay lap
+- [x] **ENHANCE-01**: All charts show a replay cursor (vertical line) synced to the current replay lap
 - [ ] **ENHANCE-02**: All time-series charts show SC/VSC period shading (reusing existing pattern)
 - [ ] **ENHANCE-03**: Multi-driver charts have a driver visibility toggle to show/hide individual drivers
 - [ ] **ENHANCE-04**: All charts progressively reveal data up to current lap during replay (spoiler-free mode)
@@ -59,13 +59,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STRAT-01 | Phase 5 | Pending |
+| STRAT-01 | Phase 5 | Complete |
 | STRAT-02 | Phase 6 | Pending |
 | STRAT-03 | Phase 6 | Pending |
 | RACE-01 | Phase 6 | Pending |
 | RACE-02 | Phase 7 | Pending |
 | RACE-03 | Phase 8 | Pending |
-| ENHANCE-01 | Phase 5 | Pending |
+| ENHANCE-01 | Phase 5 | Complete |
 | ENHANCE-02 | Phase 6 | Pending |
 | ENHANCE-03 | Phase 6 | Pending |
 | ENHANCE-04 | Phase 7 | Pending |

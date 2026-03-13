@@ -83,7 +83,7 @@ Plans:
 | 2. Gap Chart + Replay Engine | v1.0 | 4/4 | Complete | 2026-03-13 |
 | 3. Standings Board | v1.0 | 2/2 | Complete | 2026-03-13 |
 | 4. Chart Enhancements | v1.0 | 2/2 | Complete | 2026-03-13 |
-| 5. Dashboard Layout + Stint Timeline | v1.1 | 0/2 | Planning | - |
+| 5. Dashboard Layout + Stint Timeline | 1/2 | In Progress|  | - |
 | 6. Lap Time Chart + Position Chart | v1.1 | 0/? | Not started | - |
 | 7. Interval History | v1.1 | 0/? | Not started | - |
 | 8. Sector Comparison Heatmap | v1.1 | 0/? | Not started | - |
