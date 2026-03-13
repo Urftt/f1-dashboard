@@ -35,6 +35,8 @@ export type LoadingStage = 'idle' | 'loading' | 'complete' | 'error'
 
 export type ReplaySpeed = 0.5 | 1 | 2 | 4
 
+export type DriverStatus = 'racing' | 'dnf' | 'finished'
+
 export interface StandingRow {
   driver: string           // abbreviation (e.g., "VER")
   fullName: string         // from DriverInfo
@@ -49,4 +51,6 @@ export interface StandingRow {
   tyreLife: number | null
   pitStops: number
   compoundChanged: boolean // true if compound differs from previous lap
+  status: DriverStatus     // 'racing' | 'dnf' | 'finished'
+  retiredOnLap: number | null // last lap completed before retiring (null if still racing)
 }

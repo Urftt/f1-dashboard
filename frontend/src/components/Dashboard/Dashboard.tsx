@@ -20,7 +20,7 @@ export function Dashboard() {
       </div>
 
       {/* Right column — standings board */}
-      <div className="lg:col-span-2">
+      <div className="lg:col-span-2 min-h-0 overflow-hidden">
         <StandingsBoard />
       </div>
     </div>

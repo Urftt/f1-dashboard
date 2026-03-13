@@ -11,10 +11,15 @@ type GapMode = 'interval' | 'gap'
  */
 function StandingRowItem({ row, mode }: { row: StandingRow; mode: GapMode }) {
   const compoundDisplay = row.compound ? COMPOUND_DISPLAY[row.compound] : null
+  const isInactive = row.status === 'dnf' || row.status === 'finished'
 
   // Gap/interval cell content
   let gapCell: string
-  if (row.position === 1) {
+  if (row.status === 'dnf') {
+    gapCell = `DNF L${row.retiredOnLap}`
+  } else if (row.status === 'finished') {
+    gapCell = 'FIN'
+  } else if (row.position === 1) {
     gapCell = '---'
   } else if (row.isLapped) {
     gapCell = row.lapsDown === 1 ? '+1 LAP' : `+${row.lapsDown} LAPS`
@@ -28,11 +33,11 @@ function StandingRowItem({ row, mode }: { row: StandingRow; mode: GapMode }) {
 
   return (
     <div
-      className="flex items-center gap-1 px-2 py-1.5 border-l-2 transition-all duration-200"
+      className={`flex items-center gap-1 px-2 py-1.5 border-l-2 transition-all duration-200${isInactive ? ' opacity-40' : ''}`}
       style={{ borderLeftColor: row.teamColor }}
     >
       {/* Position */}
-      <div className="w-8 flex items-center gap-0.5 text-sm font-mono shrink-0">
+      <div className="w-9 flex items-center gap-0.5 text-sm font-mono shrink-0">
         <span>{row.position}</span>
         {row.prevPosition !== null && row.position < row.prevPosition && (
           <ChevronUp size={12} className="text-green-500" />
@@ -59,7 +64,7 @@ function StandingRowItem({ row, mode }: { row: StandingRow; mode: GapMode }) {
       </div>
 
       {/* Gap / Interval */}
-      <div className="flex-1 text-right text-sm font-mono">
+      <div className={`flex-1 text-right text-sm font-mono${row.status === 'dnf' ? ' text-red-400' : ''}`}>
         {gapCell}
       </div>
 
@@ -97,6 +102,9 @@ function StandingRowItem({ row, mode }: { row: StandingRow; mode: GapMode }) {
  *
  * The INT/GAP column header is a toggle button switching between interval
  * (gap to car directly ahead) and gap (gap to race leader) modes.
+ *
+ * ~10 rows visible, rest accessible by scrolling. DNF/finished drivers
+ * appear at the bottom with dimmed styling.
  */
 export function StandingsBoard() {
   const [mode, setMode] = useState<GapMode>('interval')
@@ -107,7 +115,7 @@ export function StandingsBoard() {
       <div className="h-full bg-card border border-border rounded-lg flex flex-col">
         {/* Header */}
         <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border shrink-0">
-          <div className="w-8 text-xs text-muted-foreground uppercase tracking-wider shrink-0">
+          <div className="w-9 text-xs text-muted-foreground uppercase tracking-wider shrink-0">
             POS
           </div>
           <div className="w-12 text-xs text-muted-foreground uppercase tracking-wider shrink-0">
@@ -138,7 +146,7 @@ export function StandingsBoard() {
             <p className="text-sm text-muted-foreground text-center">No standings data</p>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto divide-y divide-border/50">
+          <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-border/50">
             {rows.map((row) => (
               <StandingRowItem key={row.driver} row={row} mode={mode} />
             ))}
