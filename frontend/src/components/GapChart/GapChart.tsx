@@ -36,7 +36,7 @@ export function GapChart() {
       : []
 
   const layout: Partial<Plotly.Layout> = {
-    template: 'plotly_dark',
+    template: 'plotly_dark' as unknown as Plotly.Template,
     paper_bgcolor: 'transparent',
     plot_bgcolor: 'transparent',
     yaxis: {
