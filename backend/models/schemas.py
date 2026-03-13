@@ -39,3 +39,11 @@ class ProgressEvent(BaseModel):
 
     pct: int
     stage: str
+
+
+class SafetyCarPeriod(BaseModel):
+    """A period during a race when the safety car or virtual safety car was deployed."""
+
+    start_lap: int
+    end_lap: int
+    type: str  # 'SC' | 'VSC' | 'RED'
