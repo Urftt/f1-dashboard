@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { DriverInfo, LapRow, LoadingStage, ReplaySpeed } from '@/types/session'
+import type { DriverInfo, LapRow, LoadingStage, ReplaySpeed, SafetyCarPeriod } from '@/types/session'
 
 interface SessionState {
   year: number | null
@@ -10,6 +10,7 @@ interface SessionState {
   stageLabel: string
   laps: LapRow[]
   drivers: DriverInfo[]
+  safetyCarPeriods: SafetyCarPeriod[]
   error: string | null
   isCompact: boolean
   selectedDrivers: [string | null, string | null]
@@ -23,7 +24,7 @@ interface SessionActions {
   setEvent: (event: string) => void
   setSessionType: (sessionType: string) => void
   setProgress: (pct: number, label: string) => void
-  setLaps: (laps: LapRow[], drivers?: DriverInfo[]) => void
+  setLaps: (laps: LapRow[], drivers?: DriverInfo[], safetyCarPeriods?: SafetyCarPeriod[]) => void
   setError: (msg: string) => void
   reset: () => void
   toggleCompact: () => void
@@ -46,6 +47,7 @@ const initialState: SessionState = {
   stageLabel: '',
   laps: [],
   drivers: [],
+  safetyCarPeriods: [],
   error: null,
   isCompact: false,
   selectedDrivers: [null, null],
@@ -78,7 +80,7 @@ export const useSessionStore = create<SessionStore>((set) => ({
   setProgress: (progress, stageLabel) =>
     set({ progress, stageLabel, stage: 'loading' }),
 
-  setLaps: (laps, drivers) => {
+  setLaps: (laps, drivers, safetyCarPeriods) => {
     const lap1 = laps.filter(l => l.LapNumber === 1 && l.Position !== null)
     const sorted = [...lap1].sort((a, b) => (a.Position ?? 99) - (b.Position ?? 99))
     let driverA = sorted[0]?.Driver ?? null
@@ -91,6 +93,7 @@ export const useSessionStore = create<SessionStore>((set) => ({
     set({
       laps,
       drivers: drivers ?? [],
+      safetyCarPeriods: safetyCarPeriods ?? [],
       stage: 'complete',
       progress: 100,
       isCompact: true,

@@ -1,5 +1,6 @@
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import type { SessionStore } from '@/stores/sessionStore'
+import type { SafetyCarPeriod } from '@/types/session'
 
 export function loadSession(
   year: number,
@@ -22,8 +23,9 @@ export function loadSession(
         const data = JSON.parse(ev.data) as {
           laps: Parameters<SessionStore['setLaps']>[0]
           drivers?: Parameters<SessionStore['setLaps']>[1]
+          safetyCarPeriods?: SafetyCarPeriod[]
         }
-        store.setLaps(data.laps, data.drivers)
+        store.setLaps(data.laps, data.drivers, data.safetyCarPeriods)
       } else if (ev.event === 'error') {
         const data = JSON.parse(ev.data) as { message: string }
         store.setError(data.message)

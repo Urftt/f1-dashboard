@@ -31,6 +31,12 @@ export interface DriverInfo {
   teamColor: string
 }
 
+export interface SafetyCarPeriod {
+  start_lap: number
+  end_lap: number
+  type: 'SC' | 'VSC' | 'RED'
+}
+
 export type LoadingStage = 'idle' | 'loading' | 'complete' | 'error'
 
 export type ReplaySpeed = 0.5 | 1 | 2 | 4
