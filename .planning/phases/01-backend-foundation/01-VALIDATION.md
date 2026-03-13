@@ -38,11 +38,13 @@ created: 2026-03-13
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 01-01-01 | 01 | 0 | SESS-01 | integration | `pytest tests/test_schedule.py::test_get_schedule_2018 -x` | ❌ W0 | ⬜ pending |
+| 01-01-01 | 01 | 0 | SESS-01 | integration | `pytest tests/test_schedule.py::test_get_schedule_returns_events -x` | ❌ W0 | ⬜ pending |
 | 01-01-02 | 01 | 0 | SESS-02 | unit | `pytest tests/test_schedule.py::test_only_completed_events -x` | ❌ W0 | ⬜ pending |
-| 01-01-03 | 01 | 0 | SESS-03 | unit | `pytest tests/test_schedule.py::test_session_types -x` | ❌ W0 | ⬜ pending |
-| 01-02-01 | 02 | 0 | SESS-04 | integration | `pytest tests/test_sessions.py::test_sse_progress_events -x` | ❌ W0 | ⬜ pending |
-| 01-02-02 | 02 | 0 | SESS-05 | integration | `pytest tests/test_sessions.py::test_cache_hit_faster -x` | ❌ W0 | ⬜ pending |
+| 01-01-03 | 01 | 0 | SESS-03 | unit | `pytest tests/test_schedule.py::test_session_types_for_event -x` | ❌ W0 | ⬜ pending |
+| 01-01-04 | 01 | 0 | SESS-04 | integration | `pytest tests/test_sessions.py::test_sse_progress_events -x` | ❌ W0 | ⬜ pending |
+| 01-01-05 | 01 | 0 | SESS-05 | integration | `pytest tests/test_sessions.py::test_cache_hit_faster -x` | ❌ W0 | ⬜ pending |
+
+*Note: SESS-05 automated test (test_cache_hit_faster) verifies at mock level that cached sessions skip slow loading stages. Perceived "instant" performance (<1s) is verified by human checkpoint in Plan 01-04.*
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
