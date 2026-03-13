@@ -78,6 +78,159 @@ def serialize_timedelta(td: Any) -> float | None:
     return None
 
 
+def _time_to_lap(ts: pd.Timedelta, laps: pd.DataFrame) -> int:
+    """Map a session timestamp to the lap number whose end time first exceeds ts.
+
+    Falls back to max lap number if ts exceeds all lap end times.
+    Returns 1 if laps is empty or all times are NaT.
+    """
+    if laps is None or laps.empty:
+        return 1
+
+    ts_seconds = serialize_timedelta(ts)
+    if ts_seconds is None:
+        return 1
+
+    found_any_valid_time = False
+    max_lap_seen: int | None = None
+
+    for _, row in laps.iterrows():
+        lap_time_seconds = serialize_timedelta(row.get("Time"))
+        lap_number = row.get("LapNumber")
+        if lap_number is not None:
+            try:
+                if not pd.isna(lap_number):
+                    int_lap = int(lap_number)
+                    if max_lap_seen is None or int_lap > max_lap_seen:
+                        max_lap_seen = int_lap
+            except (TypeError, ValueError):
+                pass
+
+        if lap_time_seconds is None:
+            continue
+        found_any_valid_time = True
+        if lap_time_seconds > ts_seconds:
+            if lap_number is None:
+                continue
+            try:
+                if pd.isna(lap_number):
+                    continue
+            except (TypeError, ValueError):
+                pass
+            return int(lap_number)
+
+    if not found_any_valid_time:
+        # All times were NaT — spec says return 1
+        return 1
+
+    # Fallback: return max lap number
+    if max_lap_seen is None:
+        return 1
+    return max_lap_seen
+
+
+def parse_safety_car_periods(session: Any) -> list[dict]:
+    """Parse FastF1 track_status DataFrame into lap-indexed safety car periods.
+
+    Status codes:
+      '4'     = Safety Car (SC)
+      '6'/'7' = Virtual Safety Car (VSC)
+      '5'     = Red Flag (single-lap period)
+      '1'     = AllClear (closes current period)
+
+    Returns a list of dicts with start_lap, end_lap, and type ('SC'|'VSC'|'RED').
+    Returns [] when track_status is empty or None.
+    """
+    try:
+        track_status = session.track_status
+    except AttributeError:
+        return []
+
+    if track_status is None:
+        return []
+
+    try:
+        if track_status.empty:
+            return []
+    except AttributeError:
+        return []
+
+    laps = session.laps
+    periods: list[dict] = []
+    current_start_lap: int | None = None
+    current_type: str | None = None
+
+    status_map = {
+        "4": "SC",
+        "6": "VSC",
+        "7": "VSC",
+        "5": "RED",
+    }
+
+    for _, row in track_status.iterrows():
+        ts = row.get("Time")
+        status = str(row.get("Status", ""))
+        lap = _time_to_lap(ts, laps)
+
+        if status in status_map:
+            new_type = status_map[status]
+
+            if status == "5":
+                # Red flag: close any current period first, then add single-lap RED period
+                if current_type is not None and current_start_lap is not None:
+                    periods.append({
+                        "start_lap": current_start_lap,
+                        "end_lap": lap,
+                        "type": current_type,
+                    })
+                    current_type = None
+                    current_start_lap = None
+                periods.append({
+                    "start_lap": lap,
+                    "end_lap": lap,
+                    "type": "RED",
+                })
+            else:
+                # SC or VSC
+                if current_type is None:
+                    # Start new period
+                    current_type = new_type
+                    current_start_lap = lap
+                elif current_type != new_type:
+                    # Type changed — close current and start new
+                    periods.append({
+                        "start_lap": current_start_lap,
+                        "end_lap": lap,
+                        "type": current_type,
+                    })
+                    current_type = new_type
+                    current_start_lap = lap
+                # Same type continuing — do nothing
+
+        elif status == "1":
+            # AllClear — close any current open period
+            if current_type is not None and current_start_lap is not None:
+                periods.append({
+                    "start_lap": current_start_lap,
+                    "end_lap": lap,
+                    "type": current_type,
+                })
+                current_type = None
+                current_start_lap = None
+
+    # Close any unclosed period at end of data
+    if current_type is not None and current_start_lap is not None:
+        valid_laps = laps["LapNumber"].dropna()
+        max_lap = int(valid_laps.max()) if not valid_laps.empty else current_start_lap
+        periods.append({
+            "start_lap": current_start_lap,
+            "end_lap": max_lap,
+            "type": current_type,
+        })
+
+    return periods
+
+
 def serialize_laps(laps: pd.DataFrame) -> list[dict]:
     """Convert FastF1 Laps DataFrame to JSON-safe list of dicts.
 
@@ -192,8 +345,13 @@ async def load_session_stream(
 
         laps_data = serialize_laps(session.laps)
         drivers_data = serialize_drivers(session)
+        safety_car_data = parse_safety_car_periods(session)
 
         yield ServerSentEvent(
-            data=json.dumps({"laps": laps_data, "drivers": drivers_data}),
+            data=json.dumps({
+                "laps": laps_data,
+                "drivers": drivers_data,
+                "safetyCarPeriods": safety_car_data,
+            }),
             event="complete",
         )
