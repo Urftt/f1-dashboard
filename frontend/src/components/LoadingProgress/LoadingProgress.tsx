@@ -1,10 +1,6 @@
 import { useSessionStore } from '@/stores/sessionStore'
 import { loadSession } from '@/lib/sse'
-import {
-  Progress,
-  ProgressTrack,
-  ProgressIndicator,
-} from '@/components/ui/progress'
+import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 
 export function LoadingProgress() {
@@ -48,11 +44,7 @@ export function LoadingProgress() {
         <span className="text-muted-foreground">{stageLabel}</span>
         <span className="tabular-nums font-medium">{Math.round(progress)}%</span>
       </div>
-      <Progress value={progress}>
-        <ProgressTrack>
-          <ProgressIndicator />
-        </ProgressTrack>
-      </Progress>
+      <Progress value={progress} />
     </div>
   )
 }
