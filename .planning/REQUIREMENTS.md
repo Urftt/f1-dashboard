@@ -59,23 +59,23 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STRAT-01 | — | Pending |
-| STRAT-02 | — | Pending |
-| STRAT-03 | — | Pending |
-| RACE-01 | — | Pending |
-| RACE-02 | — | Pending |
-| RACE-03 | — | Pending |
-| ENHANCE-01 | — | Pending |
-| ENHANCE-02 | — | Pending |
-| ENHANCE-03 | — | Pending |
-| ENHANCE-04 | — | Pending |
-| LAYOUT-01 | — | Pending |
+| STRAT-01 | Phase 5 | Pending |
+| STRAT-02 | Phase 6 | Pending |
+| STRAT-03 | Phase 6 | Pending |
+| RACE-01 | Phase 6 | Pending |
+| RACE-02 | Phase 7 | Pending |
+| RACE-03 | Phase 8 | Pending |
+| ENHANCE-01 | Phase 5 | Pending |
+| ENHANCE-02 | Phase 6 | Pending |
+| ENHANCE-03 | Phase 6 | Pending |
+| ENHANCE-04 | Phase 7 | Pending |
+| LAYOUT-01 | Phase 5 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 11 total
-- Mapped to phases: 0
-- Unmapped: 11 ⚠️
+- Mapped to phases: 11
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-03-13 after initial definition*
+*Last updated: 2026-03-13 — traceability populated after roadmap creation*
