@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { LapRow, LoadingStage, ReplaySpeed } from '@/types/session'
+import type { DriverInfo, LapRow, LoadingStage, ReplaySpeed } from '@/types/session'
 
 interface SessionState {
   year: number | null
@@ -9,6 +9,7 @@ interface SessionState {
   progress: number
   stageLabel: string
   laps: LapRow[]
+  drivers: DriverInfo[]
   error: string | null
   isCompact: boolean
   selectedDrivers: [string | null, string | null]
@@ -22,7 +23,7 @@ interface SessionActions {
   setEvent: (event: string) => void
   setSessionType: (sessionType: string) => void
   setProgress: (pct: number, label: string) => void
-  setLaps: (laps: LapRow[]) => void
+  setLaps: (laps: LapRow[], drivers?: DriverInfo[]) => void
   setError: (msg: string) => void
   reset: () => void
   toggleCompact: () => void
@@ -44,6 +45,7 @@ const initialState: SessionState = {
   progress: 0,
   stageLabel: '',
   laps: [],
+  drivers: [],
   error: null,
   isCompact: false,
   selectedDrivers: [null, null],
@@ -76,13 +78,19 @@ export const useSessionStore = create<SessionStore>((set) => ({
   setProgress: (progress, stageLabel) =>
     set({ progress, stageLabel, stage: 'loading' }),
 
-  setLaps: (laps) => {
+  setLaps: (laps, drivers) => {
     const lap1 = laps.filter(l => l.LapNumber === 1 && l.Position !== null)
     const sorted = [...lap1].sort((a, b) => (a.Position ?? 99) - (b.Position ?? 99))
-    const driverA = sorted[0]?.Driver ?? null
-    const driverB = sorted[1]?.Driver ?? null
+    let driverA = sorted[0]?.Driver ?? null
+    let driverB = sorted[1]?.Driver ?? null
+    // Fallback: use first two drivers from session results when positions unavailable (e.g. qualifying)
+    if (!driverA && drivers && drivers.length >= 2) {
+      driverA = drivers[0].abbreviation
+      driverB = drivers[1].abbreviation
+    }
     set({
       laps,
+      drivers: drivers ?? [],
       stage: 'complete',
       progress: 100,
       isCompact: true,

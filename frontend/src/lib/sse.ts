@@ -19,8 +19,11 @@ export function loadSession(
         const data = JSON.parse(ev.data) as { pct: number; stage: string }
         store.setProgress(data.pct, data.stage)
       } else if (ev.event === 'complete') {
-        const data = JSON.parse(ev.data) as { laps: Parameters<SessionStore['setLaps']>[0] }
-        store.setLaps(data.laps)
+        const data = JSON.parse(ev.data) as {
+          laps: Parameters<SessionStore['setLaps']>[0]
+          drivers?: Parameters<SessionStore['setLaps']>[1]
+        }
+        store.setLaps(data.laps, data.drivers)
       } else if (ev.event === 'error') {
         const data = JSON.parse(ev.data) as { message: string }
         store.setError(data.message)

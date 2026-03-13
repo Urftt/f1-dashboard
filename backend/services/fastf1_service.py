@@ -83,6 +83,7 @@ def serialize_laps(laps: pd.DataFrame) -> list[dict]:
 
     Converts all pandas/numpy types to Python primitives.
     Handles Timedelta, NaT, numpy.float64 edge cases.
+    Includes Team and FullName from FastF1 session data.
     """
     result = []
     for _, row in laps.iterrows():
@@ -91,10 +92,13 @@ def serialize_laps(laps: pd.DataFrame) -> list[dict]:
         tyre_life = row.get("TyreLife")
         stint = row.get("Stint")
         compound = row.get("Compound")
+        team = row.get("Team")
+        full_name = row.get("DriverNumber")  # We'll get full name from results
 
         result.append({
             "LapNumber": int(lap_number) if lap_number is not None and not pd.isna(lap_number) else None,
             "Driver": str(row["Driver"]),
+            "Team": str(team) if team is not None and pd.notna(team) else None,
             "LapTime": serialize_timedelta(row.get("LapTime")),
             "Time": serialize_timedelta(row.get("Time")),
             "PitInTime": serialize_timedelta(row.get("PitInTime")),
@@ -105,6 +109,34 @@ def serialize_laps(laps: pd.DataFrame) -> list[dict]:
             "Stint": int(stint) if stint is not None and pd.notna(stint) else None,
         })
     return result
+
+
+def serialize_drivers(session: Any) -> list[dict]:
+    """Extract driver info from a FastF1 session's results.
+
+    Returns abbreviation, full name, team name, and team color for each driver.
+    """
+    drivers = []
+    try:
+        results = session.results
+        if results is None or results.empty:
+            return drivers
+        for _, row in results.iterrows():
+            abbr = row.get("Abbreviation")
+            if abbr is None or pd.isna(abbr):
+                continue
+            full_name = row.get("FullName", "")
+            team = row.get("TeamName", "")
+            team_color = row.get("TeamColor", "")
+            drivers.append({
+                "abbreviation": str(abbr),
+                "fullName": str(full_name) if full_name and pd.notna(full_name) else str(abbr),
+                "team": str(team) if team and pd.notna(team) else "Unknown",
+                "teamColor": f"#{team_color}" if team_color and pd.notna(team_color) else "#888888",
+            })
+    except Exception:
+        pass
+    return drivers
 
 
 async def load_session_stream(
@@ -159,8 +191,9 @@ async def load_session_stream(
         yield _make_progress("Processing...", 80)
 
         laps_data = serialize_laps(session.laps)
+        drivers_data = serialize_drivers(session)
 
         yield ServerSentEvent(
-            data=json.dumps({"laps": laps_data}),
+            data=json.dumps({"laps": laps_data, "drivers": drivers_data}),
             event="complete",
         )

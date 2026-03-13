@@ -13,6 +13,7 @@ export interface SessionTypeInfo {
 export interface LapRow {
   LapNumber: number | null
   Driver: string
+  Team: string | null
   LapTime: number | null
   Time: number | null
   PitInTime: number | null
@@ -21,6 +22,13 @@ export interface LapRow {
   TyreLife: number | null
   Position: number | null
   Stint: number | null
+}
+
+export interface DriverInfo {
+  abbreviation: string
+  fullName: string
+  team: string
+  teamColor: string
 }
 
 export type LoadingStage = 'idle' | 'loading' | 'complete' | 'error'

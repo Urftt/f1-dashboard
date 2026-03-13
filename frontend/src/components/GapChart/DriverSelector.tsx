@@ -1,6 +1,6 @@
+import { useMemo } from 'react'
 import { useDriverList } from './useGapData'
 import { useSessionStore } from '@/stores/sessionStore'
-import { DRIVER_FULL_NAMES } from '@/lib/driverColors'
 import {
   Select,
   SelectContent,
@@ -23,6 +23,12 @@ export function DriverSelector() {
   const { teams } = useDriverList()
   const selectedDrivers = useSessionStore((s) => s.selectedDrivers)
   const setSelectedDrivers = useSessionStore((s) => s.setSelectedDrivers)
+  const sessionDrivers = useSessionStore((s) => s.drivers)
+
+  const driverNames = useMemo(
+    () => new Map(sessionDrivers.map((d) => [d.abbreviation, d.fullName])),
+    [sessionDrivers]
+  )
 
   const [driverA, driverB] = selectedDrivers
 
@@ -56,7 +62,7 @@ export function DriverSelector() {
                   <SelectLabel>{team}</SelectLabel>
                   {drivers.map((abbr) => (
                     <SelectItem key={abbr} value={abbr}>
-                      {abbr} — {DRIVER_FULL_NAMES[abbr] ?? abbr}
+                      {abbr} — {driverNames.get(abbr) ?? abbr}
                     </SelectItem>
                   ))}
                 </SelectGroup>

@@ -1,4 +1,6 @@
-import Plot from 'react-plotly.js'
+import _Plot from 'react-plotly.js'
+// react-plotly.js is CJS — Vite interop may double-wrap the default export
+const Plot = (typeof (_Plot as any).default === 'function' ? (_Plot as any).default : _Plot) as typeof _Plot
 import { useGapData } from './useGapData'
 import { useSessionStore } from '@/stores/sessionStore'
 
@@ -52,7 +54,7 @@ export function GapChart() {
     },
     margin: { t: 16, r: 8, b: 40, l: 56 },
     showlegend: false,
-    hovermode: 'x unified',
+    hovermode: 'closest',
     shapes: cursorShape,
   }
 
