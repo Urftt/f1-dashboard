@@ -68,30 +68,30 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SESS-01 | — | Pending |
-| SESS-02 | — | Pending |
-| SESS-03 | — | Pending |
-| SESS-04 | — | Pending |
-| SESS-05 | — | Pending |
-| GAP-01 | — | Pending |
-| GAP-02 | — | Pending |
-| GAP-03 | — | Pending |
-| GAP-04 | — | Pending |
-| GAP-05 | — | Pending |
-| REPL-01 | — | Pending |
-| REPL-02 | — | Pending |
-| REPL-03 | — | Pending |
-| REPL-04 | — | Pending |
-| STND-01 | — | Pending |
-| STND-02 | — | Pending |
-| STND-03 | — | Pending |
-| STND-04 | — | Pending |
+| SESS-01 | Phase 1 | Pending |
+| SESS-02 | Phase 1 | Pending |
+| SESS-03 | Phase 1 | Pending |
+| SESS-04 | Phase 1 | Pending |
+| SESS-05 | Phase 1 | Pending |
+| GAP-01 | Phase 2 | Pending |
+| GAP-02 | Phase 2 | Pending |
+| GAP-03 | Phase 2 | Pending |
+| GAP-04 | Phase 4 | Pending |
+| GAP-05 | Phase 4 | Pending |
+| REPL-01 | Phase 2 | Pending |
+| REPL-02 | Phase 2 | Pending |
+| REPL-03 | Phase 2 | Pending |
+| REPL-04 | Phase 2 | Pending |
+| STND-01 | Phase 3 | Pending |
+| STND-02 | Phase 3 | Pending |
+| STND-03 | Phase 3 | Pending |
+| STND-04 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18 ⚠️
+- Mapped to phases: 18
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-03-13 after initial definition*
+*Last updated: 2026-03-13 after roadmap creation — all requirements mapped*

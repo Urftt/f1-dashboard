@@ -1,19 +1,69 @@
-# State
-
-## Current Position
-
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-13 — Milestone v1.0 started
+# Project State
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-03-13)
 
-**Core value:** Users can see the gap between any two drivers plotted over time
-**Current focus:** Milestone v1.0 — F1 Race Replay Dashboard
+**Core value:** Users can see the gap between any two drivers plotted over time — the single most missing piece of F1 broadcast data
+**Current focus:** Phase 1 — Backend Foundation
+
+## Current Position
+
+Phase: 1 of 4 (Backend Foundation)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-03-13 — Roadmap created, all 18 v1 requirements mapped across 4 phases
+
+Progress: [░░░░░░░░░░] 0%
+
+## Performance Metrics
+
+**Velocity:**
+- Total plans completed: 0
+- Average duration: —
+- Total execution time: —
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| - | - | - | - |
+
+**Recent Trend:**
+- Last 5 plans: —
+- Trend: —
+
+*Updated after each plan completion*
 
 ## Accumulated Context
 
-(First milestone — no prior context)
+### Decisions
+
+Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
+
+- [Setup]: Replace Streamlit with React + FastAPI for richer interactivity and stateful replay
+- [Setup]: FastF1 historical data before OpenF1 live data — get UX right first
+- [Setup]: Replay model over static views — simulates live experience using historical data
+
+### Critical Pitfalls (from research)
+
+- Never call `session.load()` directly in async FastAPI routes — use `await asyncio.to_thread(session.load)` or `run_in_threadpool`
+- Enable FastF1 cache in `lifespan` startup, never per-request; add cache dir to `.gitignore` immediately (can reach 500+ MB)
+- Use per-session `asyncio.Lock` to prevent concurrent duplicate loads and cache state corruption
+- Gap calculation: use `session.laps['Time']` (session timestamp at lap end), NOT cumulative `LapTime` sums
+- All FastF1/pandas response values must be converted to Python primitives before Pydantic serialization (Timedelta, numpy.float64, NaT will cause silent 500s)
+
+### Pending Todos
+
+None yet.
+
+### Blockers/Concerns
+
+None yet.
+
+## Session Continuity
+
+Last session: 2026-03-13
+Stopped at: Roadmap created. Ready to run `/gsd:plan-phase 1`
+Resume file: None
