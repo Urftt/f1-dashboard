@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 03-standings-board-01-PLAN.md
-last_updated: "2026-03-13T15:02:27.021Z"
+stopped_at: Completed 03-standings-board-02-PLAN.md
+last_updated: "2026-03-13T15:46:28.926Z"
 last_activity: 2026-03-13 — Roadmap created, all 18 v1 requirements mapped across 4 phases
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
   percent: 0
 ---
 
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-gap-chart-replay-engine P02 | 2min | 2 tasks | 2 files |
 | Phase 02-gap-chart-replay-engine P04 | 55min | 2 tasks | 12 files |
 | Phase 03-standings-board P01 | 4min | 2 tasks | 4 files |
+| Phase 03-standings-board P02 | 30min | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,8 @@ Recent decisions affecting current work:
 - [Phase 02-gap-chart-replay-engine]: Plotly hovermode: closest instead of x-unified prevents tooltip from obscuring the gap line
 - [Phase 02-gap-chart-replay-engine]: Single invisible hover trace: overlay a transparent scatter trace to unify tooltip without visual duplication
 - [Phase 03-standings-board]: @base-ui/react/tooltip: use 'import { Tooltip } from @base-ui/react/tooltip' then Tooltip.Root etc — named subpath exports cause Vite MISSING_EXPORT errors
+- [Phase 03-standings-board]: Position 99 normalization: F1 API sends Position 99 for retirements — normalize to null in useStandingsData, display '—' in StandingsBoard, sort to bottom
+- [Phase 03-standings-board]: DNF classification: use data-derived race length (max lap across drivers) rather than totalLaps store field to detect finished/retired status
 
 ### Critical Pitfalls (from research)
 
@@ -107,6 +110,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T15:02:27.020Z
-Stopped at: Completed 03-standings-board-01-PLAN.md
+Last session: 2026-03-13T15:46:28.924Z
+Stopped at: Completed 03-standings-board-02-PLAN.md
 Resume file: None
