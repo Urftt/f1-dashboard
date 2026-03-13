@@ -28,7 +28,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. After selecting a session, user sees a loading progress bar or percentage indicator that updates in real time during the FastF1 fetch — the UI does not appear frozen
   3. After the first load completes, selecting the same session again loads instantly (under 1 second) from disk cache
   4. All lap data is available in the frontend Zustand store after a successful load — confirmed by checking network tab or dev console, no follow-up API calls needed
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 Plans:
 - [ ] 01-01-PLAN.md — Backend API (schedule + SSE session loading + caching) and test suite
@@ -75,7 +75,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Backend Foundation | 0/4 | Planning complete | - |
+| 1. Backend Foundation | 1/4 | In Progress|  |
 | 2. Gap Chart + Replay Engine | 0/TBD | Not started | - |
 | 3. Standings Board | 0/TBD | Not started | - |
 | 4. Chart Enhancements | 0/TBD | Not started | - |
