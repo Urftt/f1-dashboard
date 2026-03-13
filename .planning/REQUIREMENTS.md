@@ -32,10 +32,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Standings
 
-- [ ] **STND-01**: User sees a standings board showing driver positions at the current lap
-- [ ] **STND-02**: Standings show gap to leader and interval to car ahead
-- [ ] **STND-03**: Standings show tire compound and tire age for each driver
-- [ ] **STND-04**: Standings show pit stop count for each driver
+- [x] **STND-01**: User sees a standings board showing driver positions at the current lap
+- [x] **STND-02**: Standings show gap to leader and interval to car ahead
+- [x] **STND-03**: Standings show tire compound and tire age for each driver
+- [x] **STND-04**: Standings show pit stop count for each driver
 
 ## v2 Requirements
 
@@ -82,10 +82,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REPL-02 | Phase 2 | Complete |
 | REPL-03 | Phase 2 | Complete |
 | REPL-04 | Phase 2 | Complete |
-| STND-01 | Phase 3 | Pending |
-| STND-02 | Phase 3 | Pending |
-| STND-03 | Phase 3 | Pending |
-| STND-04 | Phase 3 | Pending |
+| STND-01 | Phase 3 | Complete |
+| STND-02 | Phase 3 | Complete |
+| STND-03 | Phase 3 | Complete |
+| STND-04 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 18 total

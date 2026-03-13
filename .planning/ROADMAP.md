@@ -63,7 +63,7 @@ Plans:
   3. Each row shows the driver's current tire compound and the number of laps on that set
   4. Each row shows how many pit stops the driver has made to that lap
   5. When the user advances the replay (play or scrub), the standings table updates to reflect the new lap
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 03-01-PLAN.md — Data hook, StandingsBoard component, and dashboard wiring
@@ -87,5 +87,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Backend Foundation | 4/4 | Complete   | 2026-03-13 |
 | 2. Gap Chart + Replay Engine | 3/4 | In Progress|  |
-| 3. Standings Board | 0/2 | Not started | - |
+| 3. Standings Board | 1/2 | In Progress|  |
 | 4. Chart Enhancements | 0/TBD | Not started | - |
