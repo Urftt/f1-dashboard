@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-03-13T13:01:07.737Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-03-13T13:04:16.550Z"
 last_activity: 2026-03-13 — Roadmap created, all 18 v1 requirements mapped across 4 phases
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 8
-  completed_plans: 5
+  completed_plans: 7
   percent: 0
 ---
 
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-backend-foundation P03 | 2min | 2 tasks | 11 files |
 | Phase 01-backend-foundation P04 | 60min | 1 tasks | 1 files |
 | Phase 02-gap-chart-replay-engine P01 | 8min | 2 tasks | 5 files |
+| Phase 02-gap-chart-replay-engine P03 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,9 @@ Recent decisions affecting current work:
 - [Phase 01-backend-foundation]: shadcn/ui Progress is self-contained — value prop controls indicator; passing children caused duplicate bar
 - [Phase 02-gap-chart-replay-engine]: Gap uses LapRow.Time (session elapsed time) not LapTime to avoid cumulative errors from safety cars and pit stops
 - [Phase 02-gap-chart-replay-engine]: --legacy-peer-deps required for react-plotly.js React 18 peer dep cap — works fine at runtime with React 19
+- [Phase 02-gap-chart-replay-engine]: lapRef.current updated every render; only isPlaying, replaySpeed, maxLap in useEffect deps — avoids stale closure while keeping interval lifecycle correct
+- [Phase 02-gap-chart-replay-engine]: HTML range input used for scrubber instead of @base-ui Slider — simpler, sufficient for integer lap steps
+- [Phase 02-gap-chart-replay-engine]: Auto-restart: pressing play when currentLap >= maxLap resets to lap 1 then plays — prevents dead play button at race end
 
 ### Critical Pitfalls (from research)
 
@@ -94,6 +98,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T13:01:07.736Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-03-13T13:04:16.548Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None

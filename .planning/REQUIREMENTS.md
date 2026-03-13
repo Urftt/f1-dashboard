@@ -25,9 +25,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Replay
 
-- [ ] **REPL-01**: User can start/pause a lap-by-lap replay of the session
-- [ ] **REPL-02**: User can set replay speed (0.5x, 1x, 2x, 4x)
-- [ ] **REPL-03**: User can jump to any lap via a scrubber control
+- [x] **REPL-01**: User can start/pause a lap-by-lap replay of the session
+- [x] **REPL-02**: User can set replay speed (0.5x, 1x, 2x, 4x)
+- [x] **REPL-03**: User can jump to any lap via a scrubber control
 - [ ] **REPL-04**: Gap chart shows a vertical cursor at the current replay lap
 
 ### Standings
@@ -78,9 +78,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GAP-03 | Phase 2 | Pending |
 | GAP-04 | Phase 4 | Pending |
 | GAP-05 | Phase 4 | Pending |
-| REPL-01 | Phase 2 | Pending |
-| REPL-02 | Phase 2 | Pending |
-| REPL-03 | Phase 2 | Pending |
+| REPL-01 | Phase 2 | Complete |
+| REPL-02 | Phase 2 | Complete |
+| REPL-03 | Phase 2 | Complete |
 | REPL-04 | Phase 2 | Pending |
 | STND-01 | Phase 3 | Pending |
 | STND-02 | Phase 3 | Pending |
