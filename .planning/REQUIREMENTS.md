@@ -9,11 +9,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Session Management
 
-- [ ] **SESS-01**: User can select a historical F1 season (2018 onwards)
-- [ ] **SESS-02**: User can browse Grand Prix events within a season
-- [ ] **SESS-03**: User can select session type (Race, Qualifying, FP1/2/3)
+- [x] **SESS-01**: User can select a historical F1 season (2018 onwards)
+- [x] **SESS-02**: User can browse Grand Prix events within a season
+- [x] **SESS-03**: User can select session type (Race, Qualifying, FP1/2/3)
 - [x] **SESS-04**: User sees loading progress with percentage during FastF1 data fetch
-- [ ] **SESS-05**: Loaded sessions are cached so reloads are instant
+- [x] **SESS-05**: Loaded sessions are cached so reloads are instant
 
 ### Gap Chart
 
@@ -68,11 +68,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SESS-01 | Phase 1 | Pending |
-| SESS-02 | Phase 1 | Pending |
-| SESS-03 | Phase 1 | Pending |
+| SESS-01 | Phase 1 | Complete |
+| SESS-02 | Phase 1 | Complete |
+| SESS-03 | Phase 1 | Complete |
 | SESS-04 | Phase 1 | Complete |
-| SESS-05 | Phase 1 | Pending |
+| SESS-05 | Phase 1 | Complete |
 | GAP-01 | Phase 2 | Pending |
 | GAP-02 | Phase 2 | Pending |
 | GAP-03 | Phase 2 | Pending |

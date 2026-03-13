@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-backend-foundation-02-PLAN.md (frontend scaffold)
-last_updated: "2026-03-13T11:17:41.201Z"
+stopped_at: Completed 01-backend-foundation/01-01-PLAN.md
+last_updated: "2026-03-13T11:18:47.644Z"
 last_activity: 2026-03-13 — Roadmap created, all 18 v1 requirements mapped across 4 phases
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -51,6 +51,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01-backend-foundation P02 | 5min | 1 tasks | 22 files |
+| Phase 01-backend-foundation P01 | 6min | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,9 @@ Recent decisions affecting current work:
 - [Setup]: FastF1 historical data before OpenF1 live data — get UX right first
 - [Setup]: Replay model over static views — simulates live experience using historical data
 - [Phase 01-backend-foundation]: Frontend scaffold: added .npmrc legacy-peer-deps for Vite 8 + @tailwindcss/vite v4 compatibility
+- [Phase 01-backend-foundation]: sse-starlette: Use sse-starlette EventSourceResponse for SSE — better compatibility than fastapi.sse
+- [Phase 01-backend-foundation]: pytest importlib mode: Required to prevent root main.py (Streamlit) shadowing backend/main.py in monorepo
+- [Phase 01-backend-foundation]: EventDate tz-naive: FastF1 returns datetime64[ns] tz-naive — normalize both sides to UTC-naive before comparison
 
 ### Critical Pitfalls (from research)
 
@@ -82,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T11:17:41.199Z
-Stopped at: Completed 01-backend-foundation-02-PLAN.md (frontend scaffold)
+Last session: 2026-03-13T11:18:47.642Z
+Stopped at: Completed 01-backend-foundation/01-01-PLAN.md
 Resume file: None
