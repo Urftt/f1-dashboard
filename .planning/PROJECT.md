@@ -2,40 +2,43 @@
 
 ## What This Is
 
-A personal F1 data dashboard designed as a second-screen companion while watching Formula 1 races. It provides real-time-style visualizations — driver gap charts, standings, and race data — that the broadcast doesn't show, aimed at data-curious fans who want deeper insight during races.
+A personal F1 race replay dashboard — a second-screen companion for watching Formula 1 races. It loads historical session data via FastF1, renders interactive driver gap charts with pit stop annotations and safety car shading, and replays sessions lap-by-lap with a synchronized standings board.
 
 ## Core Value
 
-Users can see the gap between any two drivers plotted over time so they can instantly tell whether a gap is growing or shrinking — the single most missing piece of information from F1 broadcasts.
+Users can see the gap between any two drivers plotted over time — the single most missing piece of information from F1 broadcasts.
 
 ## Requirements
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Select a historical F1 session (year, event, session type) and load its data via FastF1 — v1.0
+- ✓ Select two drivers and view their gap over time as an interactive chart — v1.0
+- ✓ Replay a session lap-by-lap with a start button and configurable speed — v1.0
+- ✓ View a live standings board showing positions, gaps, tire compounds, and pit stops — v1.0
+- ✓ Navigate to any lap during replay to inspect that moment — v1.0
+- ✓ Pit stop annotations on gap chart — v1.0
+- ✓ Safety car/VSC shading on gap chart — v1.0
 
 ### Active
 
-- [ ] Select a historical F1 session (year, event, session type) and load its data via FastF1
-- [ ] Select two drivers and view their gap over time as an interactive chart
-- [ ] Replay a session lap-by-lap with a start button and configurable speed
-- [ ] View a live standings board showing positions, gaps, tire compounds, and pit stops
-- [ ] Navigate to any lap during replay to inspect that moment
+(None — next milestone not yet planned)
 
 ### Out of Scope
 
-- Live data integration (OpenF1 API) — deferred to future milestone, build historical/replay first
+- Live data integration (OpenF1 API) — build historical/replay UX first
 - Tire strategy predictions — future feature
-- Driver telemetry overlays — future feature
+- Driver telemetry overlays — future feature, different data cadence
 - Mobile app — laptop second-screen only
 - Multi-user / deployment — personal local tool
+- Animated track position map — FastF1 positional data resolution too low
+- Qualifying/Sprint gap charts — gap semantics differ from races
 
 ## Context
 
-- The existing codebase is a Streamlit prototype using the OpenF1 API for interval tracking between two drivers. It's not working correctly and will be replaced.
-- FastF1 is a mature Python library that provides rich historical F1 timing data (laps, positions, tire info, pit stops) from 2018 onwards.
-- The user is a data scientist who values clean data visualization and interactive charts.
-- Primary use case: laptop open next to TV during race weekends, replaying historical sessions or (eventually) tracking live races.
+Shipped v1.0 with ~2,000 LOC TypeScript/React frontend and Python/FastAPI backend.
+Tech stack: React 19, Vite 8, Tailwind CSS v4, Zustand, Plotly.js, FastAPI, FastF1, Pydantic.
+All 18 v1 requirements satisfied. 4 minor tech debt items (non-blocking).
 
 ## Constraints
 
@@ -48,20 +51,14 @@ Users can see the gap between any two drivers plotted over time so they can inst
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Replace Streamlit with React + FastAPI | Need richer interactivity, multiple panels, real-time updates that Streamlit can't handle well | — Pending |
-| FastF1 before OpenF1 live data | Get the UX right with reliable historical data, then add live complexity | — Pending |
-| Plotly for charting | Interactive, zoomable, pannable charts out of the box — perfect for gap analysis | — Pending |
-| Replay model over static views | Simulates the live experience using historical data — core UX differentiator | — Pending |
+| Replace Streamlit with React + FastAPI | Need richer interactivity, multiple panels, real-time updates | ✓ Good — enabled replay engine and multi-panel layout |
+| FastF1 before OpenF1 live data | Get the UX right with reliable historical data first | ✓ Good — solid foundation for future live data |
+| Plotly for charting | Interactive, zoomable, pannable charts out of the box | ✓ Good — dark theme, hover tooltips, annotation shapes all work well |
+| Replay model over static views | Simulates live experience using historical data | ✓ Good — core UX differentiator, drives standings sync |
+| SSE for session loading | Stream progress updates during FastF1 fetch | ✓ Good — real-time progress bar, no polling needed |
+| Gap via session Time not LapTime | Avoids cumulative errors from safety cars and pit stops | ✓ Good — accurate gap calculation |
+| Dynamic driver/team data from FastF1 | No hardcoded lookup tables | ✓ Good — works across all seasons automatically |
+| HTML range input for scrubber | Simpler than component library slider for integer lap steps | ✓ Good — sufficient, no extra dependency |
 
 ---
-*Last updated: 2026-03-13 after initial project setup*
-
-## Current Milestone: v1.0 F1 Race Replay Dashboard
-
-**Goal:** Build a fully functional race replay dashboard with gap charts and standings using historical F1 data via FastF1.
-
-**Target features:**
-- Session selection and data loading with progress feedback
-- Interactive driver gap chart (core feature)
-- Standings board with positions, gaps, tires, pit stops
-- Lap-by-lap replay engine with jump-to-lap
+*Last updated: 2026-03-13 after v1.0 milestone*
