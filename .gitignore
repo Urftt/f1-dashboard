@@ -56,3 +56,6 @@ pip-wheel-metadata/
 data/
 cache/
 tmp/
+
+# Backend FastF1 cache (500+ MB)
+backend/cache/
