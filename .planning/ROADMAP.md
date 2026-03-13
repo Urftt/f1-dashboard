@@ -37,7 +37,10 @@
   2. User can view a stint timeline showing all drivers' tire stints as horizontal compound-colored bars spanning their lap range
   3. A vertical replay cursor appears on the stint timeline, synced to the current replay lap
   4. Shared utilities (`lib/compounds.ts`, `lib/plotlyShapes.ts`) exist and are used by the stint timeline — chart data memoizes on `[laps]` only, cursor reads `currentLap` separately
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 05-01-PLAN.md — Vitest setup, shared utilities (compounds, plotlyShapes), and useStintData hook
+- [ ] 05-02-PLAN.md — StintTimeline component and Dashboard layout integration with analysis section
 
 ### Phase 6: Lap Time Chart + Position Chart
 **Goal**: Users can see per-driver lap time trends and race position changes over the full race, with interactive driver filtering and safety car context
@@ -80,7 +83,7 @@
 | 2. Gap Chart + Replay Engine | v1.0 | 4/4 | Complete | 2026-03-13 |
 | 3. Standings Board | v1.0 | 2/2 | Complete | 2026-03-13 |
 | 4. Chart Enhancements | v1.0 | 2/2 | Complete | 2026-03-13 |
-| 5. Dashboard Layout + Stint Timeline | v1.1 | 0/? | Not started | - |
+| 5. Dashboard Layout + Stint Timeline | v1.1 | 0/2 | Planning | - |
 | 6. Lap Time Chart + Position Chart | v1.1 | 0/? | Not started | - |
 | 7. Interval History | v1.1 | 0/? | Not started | - |
 | 8. Sector Comparison Heatmap | v1.1 | 0/? | Not started | - |
