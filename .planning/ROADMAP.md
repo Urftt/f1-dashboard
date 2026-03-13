@@ -76,7 +76,11 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User sees vertical lines on the gap chart at laps where either selected driver pitted, clearly distinguishing gap changes caused by strategy from genuine on-track pace differences
   2. User sees yellow-shaded lap ranges on the gap chart where a Safety Car or VSC was deployed, so gap collapses under neutralized conditions are not misread as pace changes
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Backend SC/VSC period parsing, Pydantic model, SSE payload, frontend type/store/SSE wiring
+- [ ] 04-02-PLAN.md — Frontend pit stop lines + SC shading on gap chart with progressive reveal, human verification
 
 ## Progress
 
@@ -88,4 +92,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Backend Foundation | 4/4 | Complete   | 2026-03-13 |
 | 2. Gap Chart + Replay Engine | 3/4 | In Progress|  |
 | 3. Standings Board | 2/2 | Complete   | 2026-03-13 |
-| 4. Chart Enhancements | 0/TBD | Not started | - |
+| 4. Chart Enhancements | 0/2 | Not started | - |
