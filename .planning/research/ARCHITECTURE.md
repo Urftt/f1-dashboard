@@ -1,369 +1,489 @@
 # Architecture Research
 
-**Domain:** Race replay dashboard — React+TypeScript frontend, FastAPI backend, FastF1 data
+**Domain:** F1 Strategy & Analysis Dashboard — v1.1 integration into existing React+FastAPI+FastF1 stack
 **Researched:** 2026-03-13
-**Confidence:** HIGH (stack is well-documented; patterns are standard; FastF1 specifics verified)
+**Confidence:** HIGH (based on direct code inspection of the existing codebase; no guesses about external APIs)
 
-## Standard Architecture
+---
 
-### System Overview
+## Context: What Already Exists
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                        Browser (React + TS)                       │
-├──────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────────┐  │
-│  │SessionPicker │  │  GapChart    │  │    StandingsBoard     │  │
-│  └──────┬───────┘  └──────┬───────┘  └──────────┬────────────┘  │
-│         │                 │                      │               │
-│  ┌──────▼─────────────────▼──────────────────────▼────────────┐  │
-│  │                   Zustand Store                             │  │
-│  │   sessionState · replayState · lapData · driverData        │  │
-│  └──────────────────────────┬───────────────────────────────┘   │
-│                             │ fetch / SSE                        │
-├─────────────────────────────┼────────────────────────────────────┤
-│                        FastAPI (Python)                          │
-├─────────────────────────────┼────────────────────────────────────┤
-│  ┌──────────────┐  ┌────────▼──────┐  ┌────────────────────┐   │
-│  │  /sessions   │  │ /session/load  │  │  /session/{id}/... │   │
-│  │  GET listing │  │  SSE stream   │  │  laps · standings  │   │
-│  └──────┬───────┘  └───────┬───────┘  └────────┬───────────┘   │
-│         │                  │                    │               │
-│  ┌──────▼──────────────────▼────────────────────▼────────────┐  │
-│  │                  SessionService                            │  │
-│  │         (FastF1 orchestration, in-memory cache)           │  │
-│  └──────────────────────────┬───────────────────────────────┘   │
-│                             │                                    │
-│  ┌──────────────────────────▼───────────────────────────────┐   │
-│  │               FastF1  (synchronous, blocking)             │   │
-│  │   fastf1.get_session() → session.load() → laps DataFrame  │   │
-│  └──────────────────────────┬───────────────────────────────┘   │
-│                             │                                    │
-│  ┌──────────────────────────▼───────────────────────────────┐   │
-│  │            FastF1 Cache (~/.cache/fastf1/)                │   │
-│  │        Parquet files — loads in ~2s on cache hit          │   │
-│  └──────────────────────────────────────────────────────────┘   │
-└──────────────────────────────────────────────────────────────────┘
-```
+This is a subsequent-milestone document. The v1.0 architecture is fully implemented and working. All analysis below describes integration points only — what is new, what is modified, and what is left untouched.
 
-### Component Responsibilities
+**Existing architecture summary:**
 
-| Component | Responsibility | Typical Implementation |
-|-----------|----------------|------------------------|
-| SessionPicker | Year/event/session type selection and load trigger | React controlled form + fetch |
-| GapChart | Driver gap over laps, interactive zoom/hover | react-plotly.js Scatter trace |
-| StandingsBoard | Per-lap standings: position, gap, compound, pits | HTML table, updated by replay clock |
-| Zustand Store | Single source of truth for all UI state | zustand with typed slices |
-| FastAPI routers | Thin HTTP/SSE layer; no business logic | APIRouter per feature area |
-| SessionService | Loads FastF1 data once, caches in process memory | Python class with dict cache |
-| FastF1 | Historical F1 data: laps, timing, compounds, pits | External library (synchronous) |
+- React 19 + Vite 8 frontend. Single Zustand store (`sessionStore.ts`) holds all shared state.
+- All session data (laps, drivers, safety car periods) arrives in one SSE `complete` event via `GET /api/sessions/load`.
+- `LapRow[]` is the universal data type. Every chart derives from this. Already includes: `LapNumber`, `Driver`, `Team`, `LapTime`, `Time`, `PitInTime`, `PitOutTime`, `Compound`, `TyreLife`, `Position`, `Stint`.
+- Components follow the pattern: `use[Feature]Data.ts` hook (pure `useMemo` over store) + `[Feature].tsx` Plotly chart component.
+- No new API endpoints were needed for v1.0 beyond session load and schedule.
 
-## Recommended Project Structure
+---
+
+## System Overview — v1.1 Target State
 
 ```
-f1-dashboard/
-├── backend/
-│   ├── main.py                    # FastAPI app, CORS, router registration
-│   ├── routers/
-│   │   ├── sessions.py            # GET /sessions — event schedule listing
-│   │   └── session.py             # POST /session/load (SSE), GET /session/{id}/*
-│   ├── services/
-│   │   └── session_service.py     # FastF1 orchestration, in-memory store
-│   ├── models/
-│   │   └── schemas.py             # Pydantic response models
-│   └── pyproject.toml             # fastf1, fastapi, uvicorn, sse-starlette
+┌──────────────────────────────────────────────────────────────────────────┐
+│                           Browser (React + TS)                            │
+├──────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────┐  ┌──────────┐  ┌──────────────┐  ┌──────────┐             │
+│  │SessionSel│  │GapChart  │  │StandingsBoard│  │ReplayCtrls│            │
+│  └──────────┘  └──────────┘  └──────────────┘  └──────────┘             │
+│                                                                           │
+│  ┌────────────────────────────────────────────────────────────────────┐  │
+│  │              NEW: v1.1 Analysis View Row (scrollable)              │  │
+│  │  ┌───────────────┐  ┌────────────┐  ┌───────────┐  ┌──────────┐  │  │
+│  │  │ StintTimeline │  │LapTimeChart│  │PositionCh.│  │SectorHeat│  │  │
+│  │  └───────────────┘  └────────────┘  └───────────┘  └──────────┘  │  │
+│  │  ┌──────────────────────────┐                                     │  │
+│  │  │     IntervalHistory      │                                     │  │
+│  │  └──────────────────────────┘                                     │  │
+│  └────────────────────────────────────────────────────────────────────┘  │
+│                                                                           │
+│  ┌────────────────────────────────────────────────────────────────────┐  │
+│  │                    Zustand sessionStore                            │  │
+│  │  year · event · sessionType · stage · laps · drivers ·            │  │
+│  │  safetyCarPeriods · selectedDrivers · currentLap · isPlaying ·    │  │
+│  │  replaySpeed  [all unchanged from v1.0]                           │  │
+│  └──────────────────────┬─────────────────────────────────────────┘   │
+│                         │ SSE on session load (unchanged)               │
+├─────────────────────────┼──────────────────────────────────────────────┤
+│                    FastAPI (Python)                                       │
+├─────────────────────────┼──────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌────┴──────────────┐  ┌──────────────────────────┐  │
+│  │ /api/schedule│  │ /api/sessions/load│  │  NEW: /api/sessions/     │  │
+│  │  (unchanged) │  │  SSE (unchanged)  │  │  sector-times            │  │
+│  └──────────────┘  └───────────────────┘  └──────────────────────────┘  │
+│                                                                           │
+│  ┌────────────────────────────────────────────────────────────────────┐  │
+│  │                fastf1_service.py                                   │  │
+│  │  get_completed_events · get_session_types · serialize_laps ·       │  │
+│  │  serialize_drivers · parse_safety_car_periods · load_session_stream│  │
+│  │  [all unchanged]                                                   │  │
+│  │  NEW: serialize_sector_times()                                     │  │
+│  └────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## What Is New vs Modified vs Unchanged
+
+### Backend
+
+| File | Status | Change |
+|------|--------|--------|
+| `backend/main.py` | **Modified** | Register new `analysis` router |
+| `backend/routers/sessions.py` | **Unchanged** | SSE load endpoint stays as-is |
+| `backend/routers/schedule.py` | **Unchanged** | Schedule endpoints unchanged |
+| `backend/routers/analysis.py` | **New** | `GET /api/sessions/sector-times` endpoint |
+| `backend/models/schemas.py` | **Modified** | Add `SectorTimeRow`, `SectorTimesResponse` Pydantic models |
+| `backend/services/fastf1_service.py` | **Modified** | Add `serialize_sector_times()` function |
+
+### Frontend
+
+| File | Status | Change |
+|------|--------|--------|
+| `frontend/src/components/Dashboard/Dashboard.tsx` | **Modified** | Add scrollable analysis views section below existing 2-column layout |
+| `frontend/src/stores/sessionStore.ts` | **Unchanged** | No new state needed — all 5 features derive from existing `laps[]` |
+| `frontend/src/types/session.ts` | **Modified** | Add `SectorTimeRow` type |
+| `frontend/src/lib/api.ts` | **Modified** | Add `fetchSectorTimes()` |
+| `frontend/src/components/StintTimeline/` | **New** | Chart component + `useStintData` hook |
+| `frontend/src/components/LapTimeChart/` | **New** | Chart component + `useLapTimeData` hook + driver selector |
+| `frontend/src/components/PositionChart/` | **New** | Chart component + `usePositionData` hook |
+| `frontend/src/components/SectorHeatmap/` | **New** | Chart component + `useSectorData` hook |
+| `frontend/src/components/IntervalHistory/` | **New** | Chart component + `useIntervalData` hook |
+
+---
+
+## Feature Integration Analysis
+
+### 1. Stint Timeline
+
+**Data source:** `laps[]` from Zustand store — already contains `Stint`, `Compound`, `LapNumber`, `TyreLife`, `PitInTime`.
+
+**No new API endpoint needed.** All required data is present in the existing `LapRow` type.
+
+**Frontend pattern:**
+- `useStintData` hook: groups `laps[]` by `Driver` then by `Stint` number, extracts `[startLap, endLap, compound, tyreLifeAtStart]` per stint
+- `StintTimeline` component: Plotly horizontal bar chart (`type: 'bar'`, `orientation: 'h'`), one trace per compound type, y-axis = driver abbreviations, x-axis = lap numbers
+- Replay integration: optional — a vertical cursor line at `currentLap` (same pattern as `GapChart`) shows "where we are" in each stint
+
+**Compound color mapping:** Reuse `COMPOUND_DISPLAY` from `useStandingsData.ts` (existing constant — no duplication needed, just import or extract to shared util).
+
+**Driver ordering:** Sort by lap 1 `Position` (same approach as `useDriverList` in `useGapData.ts`).
+
+### 2. Lap Time Chart
+
+**Data source:** `laps[]` from Zustand store — already contains `LapTime` (seconds), `LapNumber`, `Driver`, `Compound`, `PitInTime`.
+
+**No new API endpoint needed.**
+
+**Frontend pattern:**
+- `useLapTimeData` hook: filters laps by selected drivers (multi-select), builds one `LapTime` vs `LapNumber` series per driver
+- Outlier filtering: laps where `LapTime === null` OR laps where `PitInTime !== null` (pit laps — outliers) should be hidden or visually differentiated
+- `LapTimeChart` component: Plotly scatter-lines, one trace per selected driver colored by `teamColor`
+- Driver selection: new `MultiDriverSelector` component (reuses the team-grouped list from `useDriverList`), or reuse the existing `DriverSelector` with multi-select mode
+- Replay integration: cursor line at `currentLap` — progressive reveal pattern (`LapNumber <= currentLap`)
+
+**Key implementation note:** `LapTime` is already serialized as `float | null` (total seconds) in `serialize_laps()` — no backend change needed.
+
+### 3. Position Chart (Spaghetti Chart)
+
+**Data source:** `laps[]` from Zustand store — already contains `Position`, `LapNumber`, `Driver`.
+
+**No new API endpoint needed.**
+
+**Frontend pattern:**
+- `usePositionData` hook: builds one `Position` vs `LapNumber` trace per driver
+- All drivers are shown (not user-selected) — this chart tells the whole-race story
+- `PositionChart` component: Plotly scatter-lines, y-axis inverted (position 1 = top), one trace per driver colored by `teamColor`
+- Replay integration: cursor line at `currentLap`, traces clipped to `LapNumber <= currentLap`
+
+**Y-axis:** Invert with `yaxis: { autorange: 'reversed' }` in Plotly layout.
+
+**Performance note:** 20 drivers × ~60 laps = ~1200 points. Plotly handles this trivially. No memoization concern beyond the existing pattern.
+
+### 4. Sector Comparison Heatmap
+
+**Data source:** FastF1 `session.laps[['Sector1Time', 'Sector2Time', 'Sector3Time']]` — these fields are NOT in the existing `LapRow` type and are NOT serialized in `load_session_stream`.
+
+**New API endpoint required.**
+
+**Backend changes:**
+- Add `serialize_sector_times(session)` to `fastf1_service.py` — iterates `session.laps`, serializes `Sector1Time`, `Sector2Time`, `Sector3Time` (Timedelta → float seconds), `LapNumber`, `Driver`
+- Add `GET /api/sessions/sector-times?year=Y&event=E&session_type=S` endpoint in new `analysis.py` router
+- This endpoint uses the same session-load pattern: `asyncio.to_thread` + per-session `asyncio.Lock` from `app.state.session_locks`
+- Response: `SectorTimeRow[]` — `{ driver: str, lap_number: int, s1: float | None, s2: float | None, s3: float | None }`
+
+**Why not fold into the SSE complete payload?**
+Sector times are ~3x more data per lap row than the current payload. The SSE event already transfers ~1400 rows. Adding sector fields would bloat the initial load by ~60% with data not needed until user opens the heatmap. A lazy-loaded endpoint on demand is the correct trade-off.
+
+**Frontend pattern:**
+- `useSectorData` hook: fetches sector times from new endpoint when session is loaded; computes relative pace per sector per lap (Z-score or percentile vs session best) for color mapping
+- `SectorHeatmap` component: Plotly heatmap (`type: 'heatmap'`), x-axis = lap numbers, y-axis = drivers, z = relative sector pace; one heatmap per sector (S1/S2/S3) or tabbed
+- Fetch trigger: `useEffect` on `year + event + sessionType` (same pattern as SSE load)
+- Loading state: local `useState` in the hook — does not pollute global store
+
+**Color scale:** Diverging color scale (green = fast relative to field, red = slow). Plotly `colorscale: 'RdYlGn'` reversed.
+
+### 5. Interval History
+
+**Data source:** `laps[]` from Zustand store — `Time` (session elapsed seconds), `LapNumber`, `Driver`, `Position`.
+
+**No new API endpoint needed.**
+
+**Frontend pattern:**
+- `useIntervalData` hook: for each lap, compute gap to the car directly ahead (sorted by `Position` at that lap), using `Time` difference — the same calculation that `useStandingsData` already performs per-lap for the current replay lap
+- Key insight: the full interval calculation is already implemented in `useStandingsData.ts` lines 131–139. `useIntervalData` is a generalization of that logic: run it for ALL laps, not just `currentLap`
+- `IntervalHistory` component: Plotly scatter-lines, one trace per driver, y-axis = interval to car ahead (seconds), x-axis = lap number
+- Driver selection: multi-select (same `MultiDriverSelector` as LapTimeChart), default to top 5 by final position to avoid visual overload
+- Replay integration: cursor line at `currentLap`
+
+---
+
+## New Component File Structure
+
+```
+frontend/src/components/
+├── StintTimeline/
+│   ├── StintTimeline.tsx          # Plotly horizontal bar chart
+│   └── useStintData.ts            # Derives stint groups from laps[]
 │
-├── frontend/
-│   ├── src/
-│   │   ├── api/
-│   │   │   └── client.ts          # Typed fetch wrappers for all endpoints
-│   │   ├── store/
-│   │   │   └── useStore.ts        # Zustand store — all shared state
-│   │   ├── components/
-│   │   │   ├── SessionPicker/
-│   │   │   │   └── SessionPicker.tsx
-│   │   │   ├── GapChart/
-│   │   │   │   └── GapChart.tsx
-│   │   │   ├── StandingsBoard/
-│   │   │   │   └── StandingsBoard.tsx
-│   │   │   └── ReplayControls/
-│   │   │       └── ReplayControls.tsx
-│   │   ├── hooks/
-│   │   │   └── useReplay.ts       # Replay timer, lap advancement logic
-│   │   ├── types/
-│   │   │   └── f1.ts              # Shared TypeScript types (LapData, Driver, etc.)
-│   │   └── App.tsx
-│   ├── vite.config.ts             # Proxy /api → http://localhost:8000
-│   └── package.json
+├── LapTimeChart/
+│   ├── LapTimeChart.tsx           # Plotly scatter-lines, multi-driver
+│   ├── useLapTimeData.ts          # Filters/shapes lap time series
+│   └── MultiDriverSelector.tsx   # Checkbox-style driver selection
 │
-├── .planning/
-└── pyproject.toml                 # Top-level uv workspace (optional)
+├── PositionChart/
+│   ├── PositionChart.tsx          # Plotly scatter-lines, y-axis inverted
+│   └── usePositionData.ts         # All-driver position traces
+│
+├── SectorHeatmap/
+│   ├── SectorHeatmap.tsx          # Plotly heatmap, tabbed S1/S2/S3
+│   └── useSectorData.ts           # Fetches from /api/sessions/sector-times
+│
+└── IntervalHistory/
+    ├── IntervalHistory.tsx        # Plotly scatter-lines
+    └── useIntervalData.ts         # Generalizes useStandingsData interval logic
+
+backend/
+├── routers/
+│   └── analysis.py                # New: GET /api/sessions/sector-times
+├── models/
+│   └── schemas.py                 # Modified: add SectorTimeRow
+└── services/
+    └── fastf1_service.py          # Modified: add serialize_sector_times()
 ```
 
-### Structure Rationale
+---
 
-- **backend/routers/:** Thin HTTP layer only. No FastF1 calls here — keeps endpoints testable without data loading.
-- **backend/services/:** All FastF1 logic is isolated here. Swapping data source later (e.g., OpenF1 live) only touches this layer.
-- **backend/models/:** Pydantic schemas define the contract between backend and frontend. Generate TypeScript types from these (e.g., datamodel-code-generator).
-- **frontend/store/:** One Zustand store for all cross-component state. Avoids prop drilling across SessionPicker → GapChart → StandingsBoard.
-- **frontend/hooks/useReplay.ts:** Replay timer is isolated in a custom hook — `setInterval` for advancing `currentLap`, speed multiplier, pause/resume. Kept out of the store because it's a side effect.
-- **frontend/api/client.ts:** All fetch calls in one place. Returns typed Promise results. Error handling centralized here.
+## New API Endpoint Specification
 
-## Architectural Patterns
+### `GET /api/sessions/sector-times`
 
-### Pattern 1: SSE for Session Load Progress
+**Query params:** `year: int`, `event: str`, `session_type: str`
 
-**What:** FastAPI streams load progress events over Server-Sent Events while FastF1 loads data in a background thread. Frontend shows a progress bar.
-
-**When to use:** FastF1 `session.load()` is synchronous and blocking — first load takes 10-30 seconds over network, ~2 seconds from cache. SSE lets the UI stay responsive and show progress rather than hanging on a blank POST response.
-
-**Trade-offs:** Slightly more complex than a plain POST+poll. Worth it because the loading delay is the biggest UX risk.
-
-**Example:**
+**Response model:**
 ```python
-# backend/routers/session.py
-import asyncio
-import threading
-from sse_starlette.sse import EventSourceResponse
-
-@router.get("/session/load")
-async def load_session(year: int, event: str, session_type: str):
-    async def event_generator():
-        yield {"data": '{"status": "loading", "progress": 0}'}
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None,
-            session_service.load,
-            year, event, session_type
-        )
-        yield {"data": f'{{"status": "ready", "session_id": "{result.session_id}"}}'}
-    return EventSourceResponse(event_generator())
+class SectorTimeRow(BaseModel):
+    driver: str          # abbreviation e.g. "VER"
+    lap_number: int
+    s1: float | None     # Sector1Time total seconds, None for pit/invalid laps
+    s2: float | None     # Sector2Time total seconds
+    s3: float | None     # Sector3Time total seconds
 ```
 
+**Response:** `list[SectorTimeRow]`
+
+**Backend implementation notes:**
+- Session must already be loaded (user arrives at this view after session load, so session will be in FastF1's disk cache). Use same `asyncio.to_thread` pattern.
+- The session-level lock from `app.state.session_locks[session_key]` prevents duplicate concurrent loads.
+- `Sector1Time`, `Sector2Time`, `Sector3Time` are `pd.Timedelta` in FastF1 — use existing `serialize_timedelta()` utility.
+- Invalid sector times (NaT) serialize to `None`.
+
+---
+
+## Data Flow — New Features
+
+### Stint Timeline, Lap Time Chart, Position Chart, Interval History
+
+```
+Session SSE complete event fires
+    ↓
+sessionStore.setLaps(laps, drivers, safetyCarPeriods)  [unchanged]
+    ↓
+Dashboard renders — v1.1 analysis row becomes visible
+    ↓
+use[Feature]Data hooks run useMemo over laps[]  [all client-side]
+    ↓
+[Feature] Plotly charts render
+    ↓
+Replay currentLap advances
+    ↓
+useMemo dependencies include currentLap → charts re-render with cursor/clip
+```
+
+No HTTP requests after session load for these four features.
+
+### Sector Heatmap
+
+```
+Session SSE complete event fires
+    ↓
+sessionStore.setLaps(...)  [unchanged]
+    ↓
+Dashboard renders — SectorHeatmap becomes visible
+    ↓
+useSectorData: useEffect fires, calls fetchSectorTimes(year, event, sessionType)
+    ↓
+GET /api/sessions/sector-times?year=Y&event=E&session_type=S
+    ↓
+fastf1_service.serialize_sector_times() — session already in FastF1 disk cache
+    (asyncio.to_thread → ~2s from disk cache)
+    ↓
+SectorTimeRow[] stored in local useSectorData state
+    ↓
+SectorHeatmap renders
+```
+
+The fetch for sector times is independent of the SSE load; it happens lazily when the heatmap mounts. Since the session is already cached on disk after the initial SSE load, this takes ~2s.
+
+---
+
+## State Management — What Changes
+
+The Zustand `sessionStore` requires **no changes**. All five new features derive from:
+
+| Store field | Used by |
+|-------------|---------|
+| `laps: LapRow[]` | Stint timeline, lap time chart, position chart, interval history |
+| `drivers: DriverInfo[]` | All five (for `teamColor` and `fullName`) |
+| `safetyCarPeriods: SafetyCarPeriod[]` | Optionally: SC shading on lap time chart and interval history |
+| `currentLap: number` | All five (cursor line / progressive reveal) |
+| `year`, `event`, `sessionType` | SectorHeatmap `useSectorData` fetch trigger |
+
+Sector times are local state inside `useSectorData` — they do not belong in the global store because they are view-specific and lazily loaded.
+
+---
+
+## Dashboard Layout Change
+
+**Current Dashboard.tsx:** Two-column grid (gap chart 3/5 + standings board 2/5), rendered when `stage === 'complete'`.
+
+**v1.1 Dashboard.tsx:** Add a second section below the existing two-column layout. Full-width, vertically stacked, one chart per row (or two per row at large breakpoints).
+
+```tsx
+// Conceptual layout
+<div className="space-y-4">
+  {/* Existing v1.0 layout — unchanged */}
+  <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+    <div className="lg:col-span-3">
+      <DriverSelector />
+      <GapChart />
+    </div>
+    <div className="lg:col-span-2">
+      <StandingsBoard />
+    </div>
+  </div>
+
+  {/* New v1.1 analysis views */}
+  <StintTimeline />
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <LapTimeChart />
+    <PositionChart />
+  </div>
+  <SectorHeatmap />
+  <IntervalHistory />
+</div>
+```
+
+Height: Each chart should be `h-[350px]` to `h-[400px]` (matching existing GapChart sizing pattern).
+
+---
+
+## Build Order
+
+Dependencies determine build order. Sector heatmap is the only feature requiring backend work; the other four are pure frontend.
+
+**Phase 1 — Pure frontend, no backend changes (can be built in parallel):**
+
+1. **Stint Timeline** — Simplest chart. `useStintData` is a straightforward group-by on existing data. Good first chart to establish the analysis-row layout pattern in `Dashboard.tsx`.
+
+2. **Position Chart** — No data transformation complexity; one trace per driver from `Position` + `LapNumber`. Validates the full-width scrollable layout.
+
+3. **Lap Time Chart** — Requires `MultiDriverSelector` (new component). Build selector after position chart confirms layout. Pit lap filtering adds minor complexity.
+
+4. **Interval History** — Most complex client-side logic (generalize `useStandingsData` interval math to all laps). Build last of the four pure-frontend features.
+
+**Phase 2 — Backend + frontend:**
+
+5. **Sector Heatmap** — Requires backend endpoint. Build after the four pure-frontend charts are working. Add `analysis.py` router, `serialize_sector_times()`, `SectorTimeRow` model, then the frontend `useSectorData` fetch + `SectorHeatmap` component.
+
+**Rationale for this order:**
+- Phases 1–4 deliver visible value immediately with zero backend risk.
+- Phase 5 is isolated — its new endpoint does not interact with any existing endpoint.
+- If sector times turn out to have data quality issues (NaT-heavy laps, missing sectors), this is contained to one feature and does not block the others.
+
+---
+
+## Architectural Patterns — New Features Follow Existing Conventions
+
+All five new features use the same pattern already established in v1.0:
+
+### Pattern: Data Hook + Plotly Component
+
+**What:** Each feature is split into a `use[Feature]Data.ts` hook (pure `useMemo` over store, no side effects) and a `[Feature].tsx` component (Plotly wrapper only, reads hook result).
+
+**Why this works here:** The same data (`laps[]`, `drivers[]`, `currentLap`) is consumed by multiple features. Hooks keep the derivation logic testable in isolation. Components stay thin.
+
+**Example (Stint Timeline):**
 ```typescript
-// frontend/api/client.ts
-export function loadSession(year: number, event: string, type: string) {
-  const url = `/api/session/load?year=${year}&event=${event}&session_type=${type}`;
-  const source = new EventSource(url);
-  return source; // caller subscribes to onmessage
+// useStintData.ts
+export function useStintData() {
+  const laps = useSessionStore(s => s.laps)
+  const drivers = useSessionStore(s => s.drivers)
+  return useMemo(() => buildStintTraces(laps, drivers), [laps, drivers])
+}
+
+// StintTimeline.tsx
+export function StintTimeline() {
+  const traces = useStintData()
+  return <Plot data={traces} layout={stintLayout} useResizeHandler style={{ width: '100%', height: '100%' }} />
 }
 ```
 
-### Pattern 2: Load-Once, Serve-Many (In-Memory Session Cache)
+### Pattern: Cursor Line at currentLap
 
-**What:** When FastF1 loads a session, the result (a set of DataFrames) is stored in a process-level dict keyed by session ID. All subsequent API requests for that session read from memory.
+**What:** All replay-synchronized charts include a vertical dashed line at `currentLap`. Already established in `GapChart.tsx`.
 
-**When to use:** Always — FastF1 data is immutable historical data. Re-loading from disk or network on every request would be 2-30 second penalty per call.
+**Apply to:** Stint timeline (shows current stint), lap time chart (shows current lap), position chart (shows current position), interval history (shows current interval).
 
-**Trade-offs:** Memory usage (~50-200 MB per loaded session for full lap + telemetry data). Acceptable for a single-user local tool. For multi-user deployment this would need a per-session LRU eviction policy.
+**Not applicable to:** Sector heatmap (grid is static — all laps visible at once).
 
-**Example:**
-```python
-# backend/services/session_service.py
-class SessionService:
-    def __init__(self):
-        self._sessions: dict[str, LoadedSession] = {}
+---
 
-    def load(self, year: int, event: str, session_type: str) -> LoadedSession:
-        key = f"{year}_{event}_{session_type}"
-        if key not in self._sessions:
-            session = fastf1.get_session(year, event, session_type)
-            session.load(laps=True, telemetry=False, weather=False)
-            self._sessions[key] = LoadedSession(session)
-        return self._sessions[key]
+## Anti-Patterns to Avoid
 
-    def get_laps_at(self, session_id: str, up_to_lap: int) -> list[dict]:
-        return self._sessions[session_id].laps_up_to(up_to_lap)
-```
+### Anti-Pattern: Adding Sector Times to the SSE Payload
 
-### Pattern 3: Client-Side Replay Clock
+**What people might do:** Add `Sector1Time`/`Sector2Time`/`Sector3Time` to `serialize_laps()` and include them in the `complete` SSE event.
 
-**What:** The replay engine lives entirely in the frontend. The backend serves the complete session lap data upfront (one API call after load). The frontend `useReplay` hook advances `currentLap` on a `setInterval` tick, filtered by speed multiplier.
+**Why it's wrong:** Sector times are three additional `float | None` values per lap row. At ~1400 rows, this adds ~30-40 KB to an already ~1.4 MB payload. More importantly, sector times are only needed when the user views the heatmap — adding them to the initial load penalizes every session load even when the heatmap is never opened.
 
-**When to use:** Always for this use case — replay is a UI concern, not a data concern. The backend has no concept of "current lap"; it just answers data queries.
+**Do this instead:** Lazy-load via a dedicated endpoint on heatmap mount.
 
-**Trade-offs:** All laps (~20 drivers × 50-70 laps = ~1400 rows) transferred at once on session load. At ~1 KB/row serialized this is ~1.4 MB — well within acceptable range for a local tool. Avoids the complexity of per-tick server polling and race conditions between replay speed and network latency.
+### Anti-Pattern: Global Store for Sector Times
 
-**Example:**
-```typescript
-// frontend/hooks/useReplay.ts
-export function useReplay(totalLaps: number) {
-  const { currentLap, setCurrentLap, speed, isPlaying } = useStore();
+**What people might do:** Add `sectorTimes: SectorTimeRow[]` to `sessionStore.ts`.
 
-  useEffect(() => {
-    if (!isPlaying) return;
-    const interval = setInterval(() => {
-      setCurrentLap(lap => Math.min(lap + 1, totalLaps));
-    }, 1000 / speed);
-    return () => clearInterval(interval);
-  }, [isPlaying, speed, totalLaps]);
-}
-```
+**Why it's wrong:** Sector times are view-specific data consumed only by `SectorHeatmap`. Putting them in the global store leaks view concerns into shared state, increases store complexity, and makes the store's test surface larger for no benefit.
 
-## Data Flow
+**Do this instead:** Local `useState` inside `useSectorData`, reset when `year/event/sessionType` changes.
 
-### Session Load Flow
+### Anti-Pattern: One Giant Analysis Component
 
-```
-User selects year/event/session type
-    ↓
-SessionPicker calls loadSession(year, event, type) → opens EventSource
-    ↓
-FastAPI: GET /api/session/load?...
-    ↓
-SessionService.load() → run_in_executor (thread pool)
-    ↓
-fastf1.get_session(year, event, type).load(laps=True)
-    ↓ (2–30s)
-SSE event: {"status": "ready", "session_id": "2024_Monaco_R"}
-    ↓
-Frontend: stores session_id, calls GET /api/session/{id}/laps
-    ↓
-SessionService returns all laps serialized to JSON
-    ↓
-Zustand: stores lapData[], derives driverList
-    ↓
-GapChart + StandingsBoard render with currentLap = 1
-```
+**What people might do:** Build a single `AnalysisPanel.tsx` that renders all five charts.
 
-### Replay Flow
+**Why it's wrong:** Mixing five independent data derivations in one component creates tight coupling, makes each chart harder to test and reason about, and prevents independent lazy-loading.
 
-```
-User presses Play
-    ↓
-useStore: isPlaying = true
-    ↓
-useReplay hook: setInterval ticks at 1000ms / speed
-    ↓
-setCurrentLap(lap + 1) on each tick
-    ↓
-GapChart re-renders: filters lapData where LapNumber <= currentLap
-StandingsBoard re-renders: shows state at currentLap
-    ↓
-User jumps to lap 30: setCurrentLap(30) directly
-```
+**Do this instead:** Keep each chart in its own directory with its own hook (existing v1.0 convention).
 
-### Key Data Flows
+### Anti-Pattern: Re-Running Interval Math for Every currentLap Change
 
-1. **Session loading:** SSE stream → session_id → one bulk fetch of all laps → stored in Zustand
-2. **Replay advancement:** Client-only setInterval → currentLap counter → component filters on currentLap
-3. **Gap chart:** Derived from lapData — `lapData.filter(d => d.LapNumber <= currentLap)` for each selected driver, then diff at each lap
-4. **Standings board:** Derived from lapData at `currentLap` — sorted by Position, shows Compound + PitInTime
+**What people might do:** In `useIntervalData`, run the interval computation inside a `useMemo` that depends on `currentLap`.
+
+**Why it's wrong:** Interval history shows all laps at once — the full time-series for all laps, not just up to `currentLap`. Running it per-lap would compute a partial dataset and throw away the rest.
+
+**Do this instead:** Compute the full interval time-series in a `useMemo([laps, drivers])` (no `currentLap` dependency). `currentLap` is only used for the cursor line shape, not for data filtering.
+
+---
 
 ## Integration Points
-
-### External Services
-
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| FastF1 library | Python import, synchronous blocking call | Must run in thread pool (run_in_executor) to avoid blocking FastAPI event loop |
-| FastF1 disk cache | Automatic via fastf1.Cache.enable_cache() | Set cache dir to ~/.cache/fastf1 or project-local .fastf1_cache; cache hit = ~2s |
-| Vite dev proxy | vite.config.ts proxy /api → localhost:8000 | Eliminates CORS headers in dev; production uses nginx or FastAPI static file serving |
 
 ### Internal Boundaries
 
 | Boundary | Communication | Notes |
 |----------|---------------|-------|
-| SessionPicker → Zustand | Direct store write via useStore() | On load complete: stores session_id and lapData |
-| GapChart ↔ Zustand | Read selectedDrivers, lapData, currentLap | No props threading needed |
-| StandingsBoard ↔ Zustand | Read lapData at currentLap, driverInfo | Derives standings per-lap from lap Position column |
-| ReplayControls ↔ Zustand | Writes isPlaying, speed, currentLap | useReplay hook subscribes to these |
-| Frontend ↔ FastAPI | REST (JSON) + SSE (load progress) | All calls through `/api/client.ts`; base URL from env var |
-| FastAPI routers ↔ SessionService | Direct Python call (singleton injected via FastAPI dependency) | SessionService is stateful — use `app.state` or module-level singleton |
+| `useStintData` ↔ `sessionStore` | `useSessionStore` selector | Reads `laps`, `drivers` — no writes |
+| `useLapTimeData` ↔ `sessionStore` | `useSessionStore` selector | Reads `laps`, `drivers`, `currentLap` |
+| `usePositionData` ↔ `sessionStore` | `useSessionStore` selector | Reads `laps`, `drivers`, `currentLap` |
+| `useIntervalData` ↔ `sessionStore` | `useSessionStore` selector | Reads `laps`, `drivers` (not currentLap for data) |
+| `useSectorData` ↔ `sessionStore` | `useSessionStore` selector (year/event/sessionType) | Triggers fetch; stores result locally |
+| `useSectorData` ↔ `/api/sessions/sector-times` | `fetch` via `lib/api.ts` | Lazy-loaded; abortable on unmount |
+| `analysis.py` router ↔ `fastf1_service.py` | Direct Python call | `asyncio.to_thread(serialize_sector_times, session)` |
+| `analysis.py` router ↔ `app.state.session_locks` | FastAPI `Request` access | Reuses existing per-session lock mechanism |
 
-## What Is New vs Modified
+### External Services
 
-| Item | Status | Notes |
-|------|--------|-------|
-| `backend/` directory | **New** | Replaces root-level Streamlit files |
-| `backend/services/session_service.py` | **New** — wraps existing logic | `data_fetcher.py` (OpenF1) and `data_processor.py` (IntervalCalculator) are replaced; interval calculation logic moves here but now uses FastF1 lap data |
-| `frontend/` directory | **New** | No existing React code |
-| `app.py` | **Replaced** | Streamlit app deleted; all UI becomes React |
-| `data_fetcher.py` | **Replaced** | Was OpenF1 API — new SessionService uses FastF1 instead |
-| `data_processor.py` | **Reused conceptually** | IntervalCalculator logic (gap = d2.LapStartDate - d1.LapStartDate per lap) is reproduced backend-side, but simpler with FastF1's cleaner per-lap data |
-| `config.py` | **Replaced** | Backend gets a `settings.py` using Pydantic BaseSettings |
+| Service | Integration Pattern | Notes |
+|---------|---------------------|-------|
+| FastF1 (sector times) | Existing `asyncio.to_thread` pattern | `session.laps[['Sector1Time','Sector2Time','Sector3Time']]` — already loaded when `laps=True` in `session.load()` |
 
-## Suggested Build Order
+**Key fact:** `Sector1Time`, `Sector2Time`, `Sector3Time` are part of FastF1's default laps DataFrame when `laps=True` (already the existing load flag). No additional `session.load()` call or new FastF1 configuration is needed.
 
-Build order respects hard dependencies: you can't build the GapChart without data; you can't get data without the API; you can't call the API without FastF1 loading working.
+---
 
-1. **Backend: FastF1 data layer** — `SessionService.load()` + `get_laps()` working in isolation (test with a Python script). This is the highest-risk piece; validate FastF1 field names and data shape first.
+## Shared Utility Opportunities
 
-2. **Backend: FastAPI skeleton** — `GET /sessions` (event list) and `GET /session/{id}/laps` returning real data. Add CORS. Add `run_in_executor` wrapper. Validate JSON shape.
+The following logic is currently duplicated or inline-only — v1.1 is a good time to extract:
 
-3. **Backend: SSE load progress** — Add `GET /api/session/load` SSE endpoint. Test with `curl`. This is optional infrastructure but critical for UX — build it before the frontend so the contract is set.
+| Utility | Currently | Extract To |
+|---------|-----------|------------|
+| `COMPOUND_DISPLAY` (letter + color map) | `useStandingsData.ts` | `frontend/src/lib/compounds.ts` — needed by StintTimeline and LapTimeChart |
+| Interval-to-car-ahead calculation | `useStandingsData.ts` lines 131–139 | `frontend/src/lib/lapMath.ts` — needed by `useIntervalData` |
+| Cursor line shape builder | Inline in `GapChart.tsx` | Extract to `frontend/src/lib/plotlyShapes.ts` — used by all 5 new charts |
 
-4. **Frontend: Store + API client** — Zustand store with typed state, `client.ts` with typed fetch wrappers. No UI yet — validate types compile.
+These extractions are optional quality-of-life improvements, not blockers.
 
-5. **Frontend: SessionPicker + load flow** — Form, EventSource subscription, progress display, store population. End-to-end: select session → data in store.
-
-6. **Frontend: GapChart** — Plotly Scatter with `lapData` filtered by `currentLap` for two drivers. Hardcode drivers first, add selector second.
-
-7. **Frontend: Replay controls + useReplay hook** — Play/pause/speed/jump-to-lap. Wire to GapChart filtering.
-
-8. **Frontend: StandingsBoard** — Table reading position data at `currentLap`. Compound and pit stop annotations.
-
-## Anti-Patterns
-
-### Anti-Pattern 1: Calling FastF1 Directly in an Async Route
-
-**What people do:** `@app.get("/load") async def load(): session = fastf1.get_session(...); session.load()`
-
-**Why it's wrong:** `session.load()` is synchronous and blocks for 10-30 seconds. Inside an async route, this blocks the entire FastAPI event loop — no other request can be served until it completes.
-
-**Do this instead:** `await asyncio.get_event_loop().run_in_executor(None, session_service.load, year, event, type)` — offloads the blocking call to a thread pool worker.
-
-### Anti-Pattern 2: Fetching Laps Per-Tick During Replay
-
-**What people do:** Call `GET /api/session/{id}/laps?lap=N` on every replay tick to get incremental data.
-
-**Why it's wrong:** Creates a waterfall of HTTP requests (one per second at 1x speed), adds latency jitter to replay smoothness, and hammers the backend for no reason — the data doesn't change.
-
-**Do this instead:** Fetch all laps once after session load, store in Zustand, filter client-side by `currentLap` on each render. The full dataset is ~1-2 MB and fits comfortably in browser memory.
-
-### Anti-Pattern 3: Re-Creating Plotly Figure Object on Every Render
-
-**What people do:** Construct a new `data` and `layout` object on every React render, passing them as new references to `<Plot>`.
-
-**Why it's wrong:** React Plotly detects change by reference equality. New objects on every render triggers a full Plotly redraw — visible as chart flash and lag, especially with 1400+ data points.
-
-**Do this instead:** Memoize the trace data with `useMemo(() => buildTraces(lapData, currentLap, selectedDrivers), [lapData, currentLap, selectedDrivers])` and use `Plotly.react()` under the hood (which `react-plotly.js` does by default when you don't recreate the component).
-
-### Anti-Pattern 4: Storing Replay Timer in Zustand
-
-**What people do:** Put `setInterval` ID or timer logic inside a Zustand store action.
-
-**Why it's wrong:** Zustand stores are not lifecycle-aware. React's `useEffect` cleanup is the correct mechanism for managing intervals (start on mount / dependency change, clear on unmount / stale closure). Mixing setInterval into Zustand leads to leaked intervals and stale closures over `currentLap`.
-
-**Do this instead:** Keep the interval in `useReplay` hook using `useEffect` with proper cleanup. The hook reads `speed` and `isPlaying` from Zustand but manages the timer itself.
-
-## Scaling Considerations
-
-This is a personal local tool (single user). Scale is not a concern. The only relevant "scale" dimension is data volume per session.
-
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| 1 user, local | Current design is correct — in-memory cache, no auth, no persistence |
-| Add live data (future milestone) | Add a second service alongside SessionService: `LiveService` that polls OpenF1 API. Same frontend store interface — just a different data source. |
-| Multi-user / deployment | Add per-session LRU eviction in SessionService; add auth; consider Redis for shared session cache across workers |
-
-### Scaling Priorities
-
-1. **First bottleneck:** FastF1 load time (10-30s cold, 2s warm). Mitigated by SSE progress feedback and disk cache. Enable `fastf1.Cache.enable_cache()` on startup.
-2. **Second bottleneck:** Large telemetry data if telemetry=True is added later (~10x larger than laps-only). Mitigate by keeping `telemetry=False` until explicitly needed.
+---
 
 ## Sources
 
-- FastF1 documentation — Timing and Telemetry Data: https://docs.fastf1.dev/core.html
-- FastF1 getting started: https://docs.fastf1.dev/getting_started/basics.html
-- FastAPI official SSE docs: https://fastapi.tiangolo.com/tutorial/server-sent-events/
-- FastAPI background tasks: https://fastapi.tiangolo.com/tutorial/background-tasks/
-- sse-starlette (SSE for FastAPI/Starlette): https://github.com/sysid/sse-starlette
-- Zustand state management (2025): https://makersden.io/blog/react-state-management-in-2025
-- React Plotly.js performance: https://github.com/plotly/react-plotly.js/issues/68
-- FastAPI + React full-stack template: https://github.com/fastapi/full-stack-fastapi-template
-- FastAPI and React in 2025: https://www.joshfinnie.com/blog/fastapi-and-react-in-2025/
+- Direct code inspection: `backend/services/fastf1_service.py`, `backend/models/schemas.py`, `backend/routers/sessions.py`, `backend/main.py`
+- Direct code inspection: `frontend/src/stores/sessionStore.ts`, `frontend/src/types/session.ts`, `frontend/src/components/GapChart/useGapData.ts`, `frontend/src/components/GapChart/GapChart.tsx`, `frontend/src/components/StandingsBoard/useStandingsData.ts`, `frontend/src/components/Dashboard/Dashboard.tsx`
+- FastF1 laps DataFrame fields: https://docs.fastf1.dev/core.html#fastf1.core.Laps
 
 ---
-*Architecture research for: F1 Race Replay Dashboard (React + FastAPI + FastF1)*
+*Architecture research for: F1 Strategy & Analysis Dashboard — v1.1 integration*
 *Researched: 2026-03-13*

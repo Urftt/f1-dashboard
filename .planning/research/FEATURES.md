@@ -1,8 +1,23 @@
 # Feature Research
 
-**Domain:** F1 Race Replay Dashboard (second-screen companion)
+**Domain:** F1 Strategy & Analysis Dashboard (v1.1 — five new analysis views)
 **Researched:** 2026-03-13
-**Confidence:** HIGH (FastF1 data model verified via official docs; UX patterns verified against MultiViewer, f1-dash, TracingInsights, undercut-f1)
+**Confidence:** HIGH (FastF1 data model verified via official docs and GitHub issues; UX patterns verified against TracingInsights, f1-visualization.vercel.app, FastF1 example gallery, PITWALL)
+
+---
+
+## Scope Note
+
+This file covers only the **five new v1.1 features**. All v1.0 features (session selector, gap chart, replay engine, standings board, pit annotations, SC shading) are already built and not re-researched here.
+
+Existing data already in the Zustand store and available to all new components:
+- `laps[]` — per-driver per-lap rows with: `LapNumber`, `Driver`, `Team`, `LapTime`, `Time`, `PitInTime`, `PitOutTime`, `Compound`, `TyreLife`, `Position`, `Stint`
+- `drivers[]` — abbreviation, fullName, team, teamColor (hex)
+- `safetyCarPeriods[]` — start_lap, end_lap, type
+- `currentLap` — replay cursor (integer)
+- `selectedDrivers` — [driverA, driverB] abbreviations
+
+The backend already serializes `Sector1Time`, `Sector2Time`, `Sector3Time` from FastF1 but **does not yet expose them in the API response** — these need to be added to the schema and serialize_laps() for the heatmap feature. All other new features can be computed purely from what is already loaded.
 
 ---
 
@@ -10,130 +25,110 @@
 
 ### Table Stakes (Users Expect These)
 
-Features that any F1 replay tool must have. Missing these makes the product feel broken or unfinished.
+Features that belong in a strategy analysis tool. Missing them makes the product feel incomplete relative to the domain.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Session picker (year + event + session type) | Users need to load any historical race before anything else works | LOW | FastF1 provides event schedule; expose year → event → session type cascade. Session types: Race, Qualifying, Sprint |
-| Loading progress feedback | FastF1 downloads and caches data; first load can take 10–30s | LOW | Show progress bar or spinner with status text (e.g. "Loading lap data…"). No feedback = users assume it crashed |
-| Driver gap chart over time | The stated core value; every F1 analytics tool has this | HIGH | X-axis: lap number. Y-axis: gap in seconds. Zero line = equal. Positive = Driver A ahead. FastF1 `Position` + `LapTime` columns required |
-| Zero-line reference on gap chart | Without it users can't read who is ahead | LOW | Dashed horizontal line at 0, labeled "Driver A ahead / Driver B ahead" in quadrants |
-| Hover tooltips on gap chart | Standard for any Plotly chart; users expect exact values on hover | LOW | Show: lap number, gap value in seconds, both driver names |
-| Standing board per lap | Users want to know overall race order, not just two drivers | MEDIUM | Columns: Position, Driver (abbrev + team color), Gap to leader, Interval, Compound, Pit stops. Keyed to current replay lap |
-| Tire compound display in standings | Compound (SOFT/MEDIUM/HARD/WET/INT) is broadcast-standard information | LOW | FastF1 `Compound` column. Color-code by compound: red/yellow/white/green/blue |
-| Pit stop count in standings | Every broadcast shows this; absence is noticed | LOW | Derived from FastF1 `Stint` increments or `PitInTime` not-null |
-| Replay start/stop control | Core replay UX; without it the board is static | MEDIUM | Play/pause button. Advances lap counter on a timer interval |
-| Lap-by-lap stepping | Users want to jump to a specific moment | LOW | Slider or input for lap number. Instantly updates standings board and gap chart cursor |
-| Playback speed control | Watching lap-by-lap at 1x is too slow; users need 2x/4x | LOW | Discrete options: 0.5x, 1x, 2x, 4x. Affects timer interval between lap advances |
+| Stint timeline (tire strategy bar chart) | Every F1 strategy visualization shows tire stints as horizontal bars — it is the canonical way to read race strategy | MEDIUM | Horizontal bars per driver, one row per driver, color by compound (standard: red=SOFT, yellow=MEDIUM, white=HARD, green=INT, blue=WET), x-axis = laps, bar width = stint length. FastF1: `Stint`, `Compound`, `TyreLife`, `LapNumber` per row gives everything needed. Pit stop boundaries visible at bar transitions. |
+| Lap time chart (multi-driver scatter/line) | The primary way to read race pace and degradation — every analytics tool has this | HIGH | X-axis: lap number. Y-axis: lap time in seconds. One trace per selected driver, team color. Scatter preferred over connected line to avoid misleading visual across pit laps and outliers. Safety car laps must be visually de-emphasized (greyed out or marked). Pit laps excluded from trend. Trendline per stint optional but expected. |
+| Position chart (spaghetti chart) | Shows overtakes and strategy plays across the full field — standard F1 broadcast graphic | MEDIUM | X-axis: lap number. Y-axis: position (1 at top, 20 at bottom — inverted). All 20 drivers as separate lines, team colors. Major interaction: hover shows driver at position on that lap. Pit stops visible as brief position drops. SC/VSC periods shaded. |
+| Sector comparison heatmap | Specialist tool but widely expected in F1 data tools; sector times reveal *where* a driver is gaining or losing | HIGH | Grid: rows = laps (or selected drivers), columns = S1/S2/S3. Color scale: purple = overall best (session), green = personal best, white/neutral = slower. Cell shows sector time as float seconds. User selects which drivers to include. Requires `Sector1Time`, `Sector2Time`, `Sector3Time` — not yet in API response. |
+| Compound color coding | Without compound-matched colors the strategy charts are unreadable | LOW | Use established convention: SOFT=red (#E8002D), MEDIUM=yellow (#FFF200), HARD=white (#FFFFFF), INTERMEDIATE=green (#39B54A), WET=blue (#0067FF). Already used in standings board — reuse. |
+| Chart hover tooltips | Every Plotly chart expects hover showing exact values — absence feels broken | LOW | Lap time chart: show driver, lap, time (mm:ss.mmm), compound, stint. Position chart: show driver, lap, position. Heatmap: show driver, lap, sector, time. |
 
 ### Differentiators (Competitive Advantage)
 
-Features that make this tool more valuable than screenshotting the F1 app.
+Features that make this tool more useful than a static screenshot from a competitor tool.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Driver-selectable gap chart (pick any two) | Broadcasts only show the leader gap; this answers "is Verstappen catching Norris?" | MEDIUM | Dropdown selectors for Driver A / Driver B. Gap = Driver B time ahead of Driver A (positive when B is ahead) |
-| Pit stop annotations on gap chart | Users can immediately explain gap spikes without remembering strategy | LOW | Vertical dashed lines or dot markers at laps where either driver pitted. FastF1 `PitInTime` / `Stint` changes |
-| Safety car / VSC lap shading | Gap closures during SC/VSC are misleading without context | MEDIUM | FastF1 `TrackStatus` column: '4' = Safety Car, '6' = VSC. Shade those lap ranges on the chart in yellow |
-| Replay lap cursor on gap chart | Shows where in the race the replay currently is | LOW | Vertical line on gap chart that moves as replay advances |
-| Tire compound color on standings row | Instant visual: who is on old softs vs fresh hards | LOW | Colored pill/badge next to compound abbreviation (standard color map) |
-| Tire age (laps on current set) | Tells users whether a tire is fresh or degrading | LOW | FastF1 `TyreLife` column; display as "S 12" meaning 12 laps on softs |
-| Gap to leader vs interval toggle | Power users want both views; gap-to-leader for strategy, interval for battles | LOW | Toggle on gap chart. Gap-to-leader computes each driver vs P1 each lap |
+| Interval history chart (gap-to-car-ahead over laps) | Shows hunting vs. managing phases — not available on any broadcast or most tools; directly answers "was Norris ever in attack range of Verstappen?" | HIGH | X-axis: lap number. Y-axis: gap-to-car-ahead in seconds. One line per selected driver. Includes DRS window (1.0s) as a horizontal reference line. Data challenge: FastF1's public `Laps` DataFrame does NOT include `IntervalToPositionAhead` as a direct column — it must be computed by matching session `Time` values: for each lap, find the driver one position ahead on that lap, look up their session `Time` value, compute the delta. This is a backend computation, not a trivial frontend derive. |
+| Replay cursor integration across all charts | Connects all five new charts to the existing replay engine — charts that respond to the current lap make this a replay companion, not a static analysis tool | LOW per chart | All new charts receive `currentLap` from the Zustand store. Render a vertical cursor line at `currentLap` on all time-series charts (stint timeline, lap time chart, position chart, interval history). The heatmap highlights the current-lap row. |
+| Driver visibility toggle | With 20 drivers on a position chart or lap time chart, users need to filter to battles they care about | LOW | Checkbox list of drivers. Toggle traces on/off without re-fetching. Already have team colors per driver — show colored dot next to each driver in the toggle list. |
+| Stint pace trend lines | On the lap time chart, a per-stint trend line quantifies degradation rate — useful for strategy comparison | MEDIUM | Compute linear regression per driver per stint, overlay as a thin dashed line on the scatter plot. Makes degradation slope visible at a glance. Implement as frontend-only post-fetch computation. |
+| Safety car annotation on all charts | Users already understand SC shading from the gap chart — carry that visual language to all new charts | LOW | Reuse existing `safetyCarPeriods` data. Shade SC laps yellow, VSC laps green-yellow, on all new time-series charts. Zero new data required. |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| Animated car positions on track map | Looks impressive, demos well | FastF1 historical positional data has low resolution (sampled, not per-frame). Building it correctly requires significant effort and produces mediocre results. F1 restricted granular positional data in 2024 | Use a standings board with position column; the data story is clearer |
-| Live race data (OpenF1 WebSocket) | Users want it for race weekends | Adds a separate async data pipeline, API key management, connection lifecycle, and failure modes. Mixing live + historical in one codebase doubles complexity | Scope to v2 milestone; validate UX with historical replay first |
-| Sector time micro-charts | Popular in analytics tools | FastF1 sector times require per-driver per-lap joins; rendering mini-charts per row in a standings table is complex React state | Show sector times in a separate detail view, not inline in the standings table |
-| Telemetry overlay (speed/throttle/brake) | Technically impressive | Telemetry data is high-frequency (100ms samples); streaming it through the API per-lap replay is a different problem entirely | Out of scope for v1; add as a drill-down view in v2 |
-| Race predictions / pace models | F1 fans love strategy | Requires substantial domain modeling; distracts from the core UX goal | Defer entirely; not what makes this tool useful as a second screen |
+| Per-lap fuel-corrected lap times | Popular in professional F1 analysis tools | Fuel load correction requires knowing starting fuel weight and per-lap burn rate — neither is available via FastF1 historical data. Implementing it with estimates would produce misleading results. | Show raw lap times; label early-stint laps as "fuel heavy" context in tooltips |
+| Qualifying sector heatmap | Sector comparison makes most sense in qualifying | Qualifying sectors behave differently — drivers do multiple flying laps, outlaps, cooldown laps. The "personal best" framing works but the session structure needs separate handling (filter to flying laps only). | Defer qualifying heatmap to a later milestone; race stint heatmap is the primary use case |
+| Side-by-side telemetry overlay (speed/throttle/brake trace) | Looks impressive, commonly requested | Telemetry is sampled at 100ms intervals, completely different data model from lap data. Would require separate API endpoints, different state management, and introduces significant performance risk in the React render loop. | Out of scope; add as a separate drill-down feature in v2 after establishing the analysis views |
+| Real-time update of charts as replay advances | Feels natural for the replay companion use case | Re-rendering all five charts on every lap advance would be expensive — Plotly re-renders are not cheap. A better pattern is: charts are full-race static, replay cursor moves as a cosmetic overlay. | Cursor line updates (cheap) on each lap advance; charts themselves do not re-render |
+| 3D or animated position map | Visually impressive demo | FastF1 positional data is low resolution; animation would be choppy. Already out of scope in PROJECT.md. | Standings board covers positional information adequately |
 
 ---
 
 ## Feature Dependencies
 
 ```
-Session Picker
-    └──requires──> Data Load + Cache
-                       └──requires──> FastF1 Backend Endpoint
+Stint Timeline
+    └──requires──> laps[] in store (Stint, Compound, LapNumber per row)
+    └──enhances──> Replay cursor (currentLap vertical line, already in store)
 
-Standings Board (per lap)
-    └──requires──> Session loaded
-    └──requires──> All drivers' lap data
+Lap Time Chart
+    └──requires──> laps[] in store (LapTime, LapNumber, Compound, Stint per row)
+    └──enhances──> Replay cursor
+    └──enhances──> Safety car shading (safetyCarPeriods already in store)
 
-Gap Chart (two-driver)
-    └──requires──> Session loaded
-    └──requires──> Two driver selections
-    └──enhances──> Replay Lap Cursor (shows current lap on chart)
+Position Chart
+    └──requires──> laps[] in store (Position, LapNumber per row)
+    └──enhances──> Replay cursor
+    └──enhances──> Safety car shading
 
-Replay Engine (play/pause/speed)
-    └──requires──> Session loaded
-    └──requires──> Standings Board (drives what it updates)
-    └──enhances──> Gap Chart (advances cursor)
+Sector Comparison Heatmap
+    └──requires──> Sector1Time, Sector2Time, Sector3Time in API response
+                       └──requires──> Backend schema update (not yet exposed)
+                       └──requires──> serialize_laps() to include sector columns
+    └──requires──> IsAccurate flag to filter garbage laps
 
-Lap Step / Scrubber
-    └──requires──> Replay Engine exists
-    └──conflicts──> Auto-play running simultaneously (pause before jump)
+Interval History Chart
+    └──requires──> laps[] in store (Position, Time, LapNumber per driver)
+    └──requires──> Backend computation of gap-to-car-ahead per driver per lap
+                       └──requires──> New API endpoint or extension of session load response
+    └──enhances──> Replay cursor
+    └──enhances──> Safety car shading
 
-Pit Stop Annotations
-    └──requires──> Gap Chart exists
-    └──requires──> FastF1 PitInTime data loaded
-
-Safety Car Shading
-    └──requires──> Gap Chart exists
-    └──requires──> FastF1 TrackStatus data loaded
-
-Tire Age Display
-    └──requires──> Standings Board exists
-    └──requires──> FastF1 TyreLife column loaded
-
-Gap-to-Leader vs Interval Toggle
-    └──requires──> Gap Chart exists
-    └──requires──> All drivers' position data loaded (not just two)
+All five new charts
+    └──enhances──> selectedDrivers (for default driver focus in lap time and heatmap views)
+    └──enhances──> drivers[] (for team colors and toggle lists)
 ```
 
 ### Dependency Notes
 
-- **Session loading gates everything:** All features depend on a successful FastF1 session load. The backend must cache aggressively (FastF1's built-in cache) to avoid re-downloading on page refresh.
-- **Replay engine drives both the standings board and the chart cursor:** These two components share a single "current lap" state; the replay engine is their source of truth.
-- **Lap scrubber conflicts with auto-play:** If the user jumps to lap 30 while replay is running, the replay must pause first or immediately sync to the jumped lap. Don't let them diverge.
-- **Gap-to-leader toggle requires all drivers loaded:** Unlike the two-driver gap chart, computing gap to leader means having every driver's lap data in memory. Load all drivers upfront so this doesn't require a separate fetch.
+- **Sector heatmap is the only feature requiring new backend work before it can render.** All other four features can be built purely from data already in the store. The stint timeline, lap time chart, position chart, and interval history all derive from `laps[]` which is already loaded.
+- **Interval history requires either a new backend computation or a frontend derive.** The gap-to-car-ahead for each driver at each lap can be computed on the frontend from `laps[]` by: (1) build a map of `{lap: {driver: sessionTime}}`, (2) for each driver at each lap, find the driver at (position - 1) on that lap, (3) diff their session `Time` values. This avoids a new API endpoint but is O(drivers × laps) work — acceptable for race data sizes.
+- **Replay cursor is free.** All new charts just read `currentLap` from the existing Zustand store. No new state required.
+- **Safety car shading is free.** `safetyCarPeriods` already in store. Reuse the same Plotly `shapes` pattern from the gap chart.
 
 ---
 
 ## MVP Definition
 
-### Launch With (v1)
+This is the v1.1 milestone launch definition, not a product MVP.
 
-Minimum to validate the concept as a second-screen companion.
+### Launch With (v1.1)
 
-- [ ] Session picker — without it nothing loads
-- [ ] Loading progress feedback — required UX hygiene; FastF1 can be slow
-- [ ] Driver gap chart (two-driver, selectable) — the stated core value of the product
-- [ ] Zero-line reference + hover tooltips on gap chart — gap chart is unreadable without them
-- [ ] Standings board (position, driver, gap to leader, interval, compound, tire age, pit count) — second-screen companion needs race context
-- [ ] Replay engine (play/pause, lap advance, playback speed 0.5x/1x/2x/4x) — "replay" is in the product name; static views are not MVP
-- [ ] Lap scrubber / jump-to-lap — lets the user investigate a specific moment without watching the whole race
-- [ ] Replay lap cursor on gap chart — connects the replay to the chart
+All five features are in scope for this milestone. Ordered by implementation dependency:
 
-### Add After Validation (v1.x)
+- [ ] Stint timeline — no new data needed; straightforward Plotly horizontal bar chart; builds familiarity with new chart components before harder features
+- [ ] Lap time chart — no new data needed; most analytically useful after the gap chart; medium complexity
+- [ ] Position chart — no new data needed; highest visual complexity (20 lines) but data is simple
+- [ ] Interval history — can be derived frontend-side from existing `laps[]`; requires careful per-lap position-ordered join
+- [ ] Sector comparison heatmap — requires backend schema change (add sector times to serialize_laps); most complex; do last
 
-Add once the core loop (load → replay → analyze) is working.
+### Defer From v1.1
 
-- [ ] Pit stop annotations on gap chart — trigger: users ask "why did the gap spike here?"
-- [ ] Safety car / VSC shading on gap chart — trigger: users are confused by gap collapses under SC
-- [ ] Gap-to-leader vs interval toggle — trigger: users want to see strategy, not just a battle
+- [ ] Qualifying sector heatmap — race heatmap first; qualifying is a separate session logic branch
+- [ ] Fuel-corrected lap times — data not available via FastF1; misleading without it
+- [ ] Stint pace trend lines (per-stint linear regression) — can add as enhancement once lap time chart is working
 
-### Future Consideration (v2+)
+### Future (v2+)
 
-Defer until v1 is validated.
-
-- [ ] Live race data via OpenF1 — defer: adds async pipeline complexity; get UX right first
-- [ ] Telemetry drill-down (speed/throttle/brake per lap) — defer: different data cadence, complex rendering
-- [ ] Qualifying session support — defer: gap chart semantics differ (delta to best lap, not race position)
-- [ ] Sprint session support — defer: same as qualifying, low urgency
+- [ ] Live data interval history via OpenF1 — different data pipeline; validates UX with historical first
+- [ ] Telemetry side-by-side drill-down — different data model entirely
+- [ ] Qualifying analysis views — sector bests, evolution of lap times across quali sessions
 
 ---
 
@@ -141,77 +136,156 @@ Defer until v1 is validated.
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| Session picker + data load | HIGH | LOW | P1 |
-| Loading progress feedback | HIGH | LOW | P1 |
-| Driver gap chart (two-driver) | HIGH | MEDIUM | P1 |
-| Zero-line + hover tooltips | HIGH | LOW | P1 |
-| Standings board | HIGH | MEDIUM | P1 |
-| Replay engine (play/pause/speed) | HIGH | MEDIUM | P1 |
-| Lap scrubber | HIGH | LOW | P1 |
-| Replay cursor on gap chart | MEDIUM | LOW | P1 |
-| Pit stop annotations | MEDIUM | LOW | P2 |
-| SC/VSC lap shading | MEDIUM | LOW | P2 |
-| Gap-to-leader toggle | MEDIUM | LOW | P2 |
-| Tire age in standings | MEDIUM | LOW | P2 |
-| Sector times detail view | LOW | MEDIUM | P3 |
-| Telemetry overlay | LOW | HIGH | P3 |
-| Live data (OpenF1) | HIGH | HIGH | P3 (v2) |
+| Stint timeline | HIGH | LOW | P1 |
+| Lap time chart | HIGH | MEDIUM | P1 |
+| Position chart | HIGH | MEDIUM | P1 |
+| Interval history | HIGH | MEDIUM | P1 |
+| Sector comparison heatmap | HIGH | HIGH | P1 |
+| Replay cursor on all new charts | MEDIUM | LOW | P1 |
+| Safety car shading on all new charts | MEDIUM | LOW | P1 (reuse existing) |
+| Driver visibility toggle | MEDIUM | LOW | P2 |
+| Stint pace trend lines | MEDIUM | MEDIUM | P2 |
+| Qualifying heatmap variant | LOW | MEDIUM | P3 |
+| Fuel-corrected lap times | LOW | HIGH (and misleading) | Anti-feature |
 
 **Priority key:**
-- P1: Must have for launch
-- P2: Should have, add when core is stable
-- P3: Nice to have, future consideration
+- P1: Must have for v1.1 launch
+- P2: Add if time allows during v1.1 phases
+- P3: Future milestone
 
 ---
 
-## Competitor Feature Analysis
+## Expected Behaviors and Interactions Per Feature
 
-| Feature | MultiViewer Race Trace | f1-dash | undercut-f1 (TUI) | Our Approach |
-|---------|----------------------|---------|-------------------|--------------|
-| Gap chart | Gap to leader + Delta to Average; team colors; hover shows full field | Gap between drivers; live only | Text-based timing table | Interactive Plotly chart; two-driver focus; pit annotations |
-| Standings board | Not a standings board; pure chart | Live timing table with intervals, compounds | Live timing table | Static-ish table keyed to current replay lap |
-| Replay / scrubbing | No replay; live only | No replay; live only | Replay of recorded sessions; variable delay | Full replay engine with speed control and lap scrubber |
-| Tire info | Not shown | Compound visible | Compound visible | Compound + tire age (laps) |
-| Pit stop markers | Dot on race trace line | Status column ("IN PIT") | Status column | Vertical annotation on gap chart |
-| Safety car context | Yellow shading on chart | Race control messages | Race control messages | Yellow lap-range shading on gap chart |
-| Historical data | Live sessions only | Live sessions only | Live sessions only | Historical only via FastF1 (live in v2) |
+### Stint Timeline
 
-The gap in the market: no existing open tool combines (1) historical FastF1 data, (2) a two-driver selectable gap chart, and (3) a replay engine with a synchronized standings board. That combination is the product.
+**Expected behavior:**
+- One horizontal bar row per driver, sorted by final finishing position
+- Each bar segment = one stint; segment width = stint lap count; color = compound
+- Pit stop transitions visible as bar boundaries with optional lap number label
+- Bars span lap 1 to final lap; drivers who retired have shorter bars
+- SC/VSC periods shaded as background rectangles (same as gap chart convention)
+
+**Interactions:**
+- Hover on a bar segment: show driver, stint number, compound, laps on tire, start lap, end lap
+- Replay cursor: vertical line at `currentLap` scrolls across all rows
+- Click on a segment: optionally jump replay to that lap (P2 enhancement)
+
+**Data required:** `Stint`, `Compound`, `LapNumber`, `TyreLife` per driver per lap — all in `laps[]`
+
+### Lap Time Chart
+
+**Expected behavior:**
+- Scatter plot (not connected line) — each point is one lap time for one driver
+- Axes: X = LapNumber, Y = lap time in seconds (or mm:ss format)
+- Points colored by driver's team color
+- Pit laps (where `PitInTime` is not null or `PitOutTime` is not null) styled differently (hollow point or X marker) to flag outlier laps
+- SC/VSC laps greyed out or marked to prevent misleading degradation reads
+- Deleted laps (when FastF1 `IsAccurate = False`) excluded from display
+
+**Interactions:**
+- Default: show all drivers (20 lines is too many — default to `selectedDrivers` [A, B] from store)
+- Driver toggle: checkbox list to add/remove drivers
+- Hover: driver abbreviation, lap number, lap time (mm:ss.mmm), compound, stint, tyre age
+- Replay cursor: vertical line at `currentLap`
+- Zoom: Plotly's built-in zoom/pan is sufficient
+
+**Data required:** `LapTime`, `LapNumber`, `Compound`, `Stint`, `PitInTime`, `PitOutTime` — all in `laps[]`
+
+### Position Chart
+
+**Expected behavior:**
+- Line chart, one line per driver, team color
+- Y-axis inverted: P1 at top, P20 at bottom — standard F1 broadcast convention
+- All 20 drivers shown by default; toggling is important
+- Lines are continuous; gaps where a driver retired are handled by dropping the line
+- Pit stop laps show a brief position dip (accurate to data — pit window laps have position jumps)
+- SC/VSC periods shaded
+
+**Interactions:**
+- Default: all drivers shown but de-emphasized except `selectedDrivers`
+- Hover: show all drivers' positions at that lap in a unified tooltip (like MultiViewer race trace)
+- Click on a line: highlight that driver (raise z-index, thicken line, dim others)
+- Replay cursor: vertical line at `currentLap`
+
+**Data required:** `Position`, `LapNumber` per driver per lap — in `laps[]`
+
+### Sector Comparison Heatmap
+
+**Expected behavior:**
+- Grid where rows = selected drivers (2–6 max for readability) and columns = S1/S2/S3 per lap
+- Alternative layout: rows = laps, columns = drivers × sectors (3 columns per driver)
+- Recommended layout: rows = drivers, sub-columns = S1/S2/S3, lap selectable via dropdown or replay cursor
+- Color scale per sector column independently (so S1 and S2 aren't compared to each other)
+- Purple cell = overall session best for that sector; green cell = personal best; white = slower; shades of red = progressively slower than personal best
+- Cell text: sector time as seconds.milliseconds (e.g. 28.341)
+- Pit laps and SC laps marked but not excluded — user can see degraded sector times
+
+**Interactions:**
+- Lap range selector: show all laps or focus on a specific stint
+- Driver selector: add/remove rows (up to ~6 before it becomes unreadable)
+- Hover: driver, lap, sector, time, delta to session best, delta to personal best
+- Click on row (driver): highlight that driver in other charts (cross-chart selection — P2)
+
+**Data required:** `Sector1Time`, `Sector2Time`, `Sector3Time` — **NOT YET IN API RESPONSE**
+Backend change required: add `Sector1Time`, `Sector2Time`, `Sector3Time` to `serialize_laps()` in `fastf1_service.py` and `LapRow` type in TypeScript.
+
+### Interval History Chart
+
+**Expected behavior:**
+- Line chart: X = lap number, Y = gap to car immediately ahead (seconds)
+- One line per selected driver (default: `selectedDrivers` [A, B])
+- Y-axis: 0 = right behind the car ahead; higher = further back; inverted is confusing — keep 0 at bottom
+- Horizontal reference line at 1.0s = DRS window (the most actionable threshold)
+- Horizontal reference line at 0s = on the car ahead (overlapping)
+- SC/VSC periods shaded
+- Pit laps show large spikes (driver drops back after pit stop) — label these clearly or exclude
+- A driver in P1 (no car ahead) is shown as null / gap dropped from chart for those laps
+
+**Interactions:**
+- Driver toggle: add/remove drivers (position chart and interval chart are most useful as companions)
+- Hover: driver, lap, interval, car ahead on that lap (driver abbreviation)
+- Replay cursor: vertical line at `currentLap`
+
+**Data derivation (frontend-computed):**
+For each driver D at each lap L:
+1. Get D's `Position` at lap L
+2. Find driver P at `Position - 1` at lap L
+3. Compute `interval = P.Time[L] - D.Time[L]` (using cumulative session time `Time` column)
+4. If Position = 1, interval = null
+
+This approach matches how the existing gap chart was implemented ("Gap via session Time not LapTime" — from PROJECT.md key decisions). It avoids the FastF1 private API issue with `IntervalToPositionAhead`.
+
+**Data required:** `Position`, `Time`, `LapNumber` per driver per lap — all in `laps[]`. No new data needed.
 
 ---
 
-## FastF1 Data Availability Confirmation
+## FastF1 Data Availability for v1.1
 
-These columns are confirmed available from FastF1's `Laps` object and are sufficient to build all v1 features:
+| New Feature | Required FastF1 Fields | Available in Store Now? | Action Needed |
+|-------------|------------------------|------------------------|---------------|
+| Stint timeline | Stint, Compound, LapNumber, TyreLife | YES | None |
+| Lap time chart | LapTime, LapNumber, Compound, Stint, PitInTime | YES | None |
+| Position chart | Position, LapNumber | YES | None |
+| Interval history | Position, Time, LapNumber | YES | None (frontend derive) |
+| Sector heatmap | Sector1Time, Sector2Time, Sector3Time | NO | Add to serialize_laps() + LapRow type |
 
-| Dashboard Feature | FastF1 Column(s) |
-|------------------|-----------------|
-| Standings position per lap | `Position` |
-| Gap to leader / interval | Computed from `LapTime` cumulative sum per driver, then diff |
-| Tire compound | `Compound` (SOFT/MEDIUM/HARD/INTERMEDIATE/WET) |
-| Tire age | `TyreLife` |
-| Pit stop detection | `PitInTime` not-null, or `Stint` increment |
-| Safety car / VSC laps | `TrackStatus` ('4' = SC, '6' = VSC) |
-| Lap numbers | `LapNumber` |
-| Stint number | `Stint` |
-
-No computed fields require external APIs. Everything comes from a single `session.load()` call.
+One backend change unlocks the heatmap. All other features are pure frontend work on existing data.
 
 ---
 
 ## Sources
 
-- [FastF1 Official Docs — Timing and Telemetry Data (core.html)](http://docs.fastf1.dev/core.html) — HIGH confidence
-- [FastF1 Introduction](https://docs.fastf1.dev/) — HIGH confidence
-- [MultiViewer Race Trace docs](https://multiviewer.app/docs/usage/race-trace) — MEDIUM confidence (current, authoritative for the feature pattern)
-- [f1-dash.com](https://f1-dash.com) — MEDIUM confidence (live product, competitor reference)
-- [undercut-f1 GitHub](https://github.com/JustAman62/undercut-f1) — MEDIUM confidence (open source replay tool, feature reference)
-- [IAmTomShaw/f1-race-replay GitHub](https://github.com/IAmTomShaw/f1-race-replay) — MEDIUM confidence (open source reference implementation)
-- [Formula Live Pulse — Live Timing Features](https://www.f1livepulse.com/en/features/live-timing/) — MEDIUM confidence (live product feature list)
-- [Enhancing F1 Data Analysis with FastF1 (pit stop article)](https://medium.com/@sabbasi3/enhancing-formula-1-data-analysis-adding-pit-stop-information-with-fastf1-7f0b09361053) — MEDIUM confidence
-- [What Does Interval Mean in F1?](https://www.topracingshop.com/blog/what-does-interval-mean-in-f1.html) — LOW confidence (domain explanation only)
+- [FastF1 Official Docs — Timing and Telemetry Data](https://docs.fastf1.dev/core.html) — HIGH confidence; confirms Sector1Time/Sector2Time/Sector3Time in Laps DataFrame; confirms IsPersonalBest and IsAccurate flags
+- [FastF1 GapToLeader/IntervalToPositionAhead GitHub Issue #735](https://github.com/theOehrly/Fast-F1/issues/735) — HIGH confidence; confirms IntervalToPositionAhead is NOT in public Laps DataFrame; recommends manual computation
+- [FastF1 gap-per-lap computation Discussion #503](https://github.com/theOehrly/Fast-F1/discussions/503) — HIGH confidence; confirms session Time-based derivation approach
+- [TracingInsights F1 Analytics](https://tracinginsights.com/) — MEDIUM confidence; competitor reference for sector heatmap and lap time chart UX patterns
+- [F1 Visualization (Vercel)](https://f1-visualization.vercel.app/) — MEDIUM confidence; reference for position chart inversion convention and hover behavior
+- [PITWALL — F1 telemetry workstation (GitHub)](https://github.com/WarmBed/PITWALL) — MEDIUM confidence; reference for sector comparison and lap table color conventions (purple/green best marking)
+- [Visualizing F1 2025 with Python — 30 Charts](https://python.plainenglish.io/visualizing-f1-2025-with-python-30-charts-that-reveal-hidden-patterns-91c5a81f44f6) — MEDIUM confidence; sector time heatmap implementation reference
+- [FastF1 Playbook 2026](https://medium.com/formula-one-forever/fastf1-playbook-10-notebooks-to-master-formula-1-data-in-2026-23c347a462b3) — MEDIUM confidence; position chart and lap time chart patterns
 
 ---
 
-*Feature research for: F1 Race Replay Dashboard — second-screen companion*
+*Feature research for: F1 Strategy & Analysis Dashboard — v1.1 milestone (five new analysis views)*
 *Researched: 2026-03-13*

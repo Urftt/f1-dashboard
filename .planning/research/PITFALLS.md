@@ -1,159 +1,165 @@
 # Pitfalls Research
 
-**Domain:** F1 Race Replay Dashboard (FastF1 + FastAPI + React + Plotly)
+**Domain:** F1 Strategy & Analysis Views — v1.1 addition to existing React + FastAPI + FastF1 dashboard
 **Researched:** 2026-03-13
-**Confidence:** HIGH (most findings verified against official FastF1 docs and FastAPI docs)
+**Confidence:** HIGH (FastF1 findings verified against official docs and GitHub issues; Plotly findings verified against plotly.js issues and community forum; integration findings from existing codebase inspection)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: session.load() Blocks the Entire FastAPI Event Loop
+### Pitfall 1: Interval History Cannot Be Built from a Standard Public FastF1 API Column
 
 **What goes wrong:**
-`session.load()` in FastF1 is a synchronous, blocking call. It fetches multiple data sources (timing stream, telemetry, car data, driver list) sequentially and can take 10–60 seconds on first load without cache. When called directly inside an `async def` FastAPI endpoint, it blocks the entire ASGI event loop, making all other requests unresponsive for the duration of the load.
+Developers assume FastF1 exposes `IntervalToPositionAhead` or `GapToLeader` as lap-level columns they can read directly. Neither column exists in the public API. The only access path is through `fastf1.api`, which is explicitly marked as private and "potentially removed or changed in future releases." Any code that calls `fastf1.api` directly will break silently on the next FastF1 version bump.
 
 **Why it happens:**
-FastF1 was designed for Jupyter notebooks and scripts, not for concurrent web server use. Developers assume that since FastAPI supports `async`, calling sync library code inside an `async def` is fine — it is not. The call will block the single event loop thread.
+The field names `IntervalToPositionAhead` and `GapToLeader` appear in FastF1 GitHub issues and discussions, so developers assume they are queryable columns. They are internal timing stream fields that FastF1 uses for alignment — not exposed via the public `session.laps` DataFrame.
 
 **How to avoid:**
-Wrap `session.load()` in `asyncio.to_thread()` (Python 3.9+) or `loop.run_in_executor(None, ...)` to offload it to the default thread pool. Always use a background task pattern with progress streaming (SSE or polling a status endpoint) so the frontend can show a loading indicator:
+Compute interval history manually from data already in the codebase: the `Time` column (session time at lap end) and the `Position` column. Sort drivers by `Position` on each lap, then compute the delta in `Time` between consecutive positions. This is exactly how the existing gap chart works — use the same pattern. The existing `serialize_laps` function already serializes `Time` and `Position` per lap, so no new backend data is needed for most cases. Handle position ties and pit laps explicitly.
 
 ```python
-import asyncio
-
-async def load_session_async(year, event, session_type):
-    session = await asyncio.to_thread(
-        fastf1.get_session, year, event, session_type
-    )
-    await asyncio.to_thread(session.load)
-    return session
+# Interval = session time difference between this driver and the car in position - 1
+# For each lap, sort by Position, then diff the Time column
+laps_at_lap_n = session.laps[session.laps['LapNumber'] == n].sort_values('Position')
+laps_at_lap_n['IntervalToAhead'] = laps_at_lap_n['Time'].diff()
 ```
 
 **Warning signs:**
-- All API requests hang when session loading is in progress
-- FastAPI access logs show requests queuing during load
-- Frontend appears completely frozen, not just the session-select UI
+- Any `import fastf1.api` in interval calculation code
+- Interval values showing `None` or unexpectedly flat lines for all cars
+- TypeError when FastF1 version is bumped
 
 **Phase to address:**
-Phase 1 (Backend foundation / session loading endpoint) — must be correct from the first implementation.
+Phase implementing interval history — design computation before writing frontend. Verify the calculation against a known race broadcast gap (e.g., lap 20 Hungarian GP 2023 showed HAM ~1.2s behind VER; check your numbers match).
 
 ---
 
-### Pitfall 2: FastF1 Cache Not Configured — Repeated 30-60 Second Loads
+### Pitfall 2: Stint Timeline Breaks on UNKNOWN or None Compound Values
 
 **What goes wrong:**
-Without the cache enabled, every `session.load()` re-downloads all timing data from the F1 live timing archive. A full race session is ~50–150 MB of raw data. Without caching, each request to the backend takes minutes; with caching, repeat loads take seconds. The FastF1 docs explicitly warn: "Disabling the cache is highly discouraged and will generally slow down your programs."
+Stint timeline visualizations filter for `Compound in ['SOFT', 'MEDIUM', 'HARD', 'INTERMEDIATE', 'WET']`. Since FastF1 v3.6.0, compound backfilling was corrected — laps that previously showed a compound now correctly show `None` when the raw stream had no compound data. The 2025 Belgian GP also had intermediate stints incorrectly labelled as medium. Code that assumes `Compound` is always a known string will silently drop stints or crash on `None`.
 
 **Why it happens:**
-Developers skip the one-line cache setup because the library works without it. In a web server context the default temporary OS cache location may also not persist between server restarts.
+The existing `serialize_laps` function already handles `None` compound (returns `null` in JSON) — the bug happens on the frontend or in backend aggregation when mapping compound values to colors without a null guard. Visualizing stints requires grouping consecutive laps with the same compound, and if a lap in the middle of a stint has `None` compound, the stint gets split into fragments.
 
 **How to avoid:**
-Always call `fastf1.Cache.enable_cache()` with an explicit, persistent directory path at application startup — not inside request handlers. Use a project-local path like `./fastf1_cache` or configure via environment variable. Add the cache directory to `.gitignore` (FastF1 cache can exceed 500 MB and get repos flagged/banned).
+In backend stint aggregation: treat `None` as "carry forward from previous lap in same stint" using the `Stint` integer (which is always populated). Group by `(Driver, Stint)` first, then derive compound as the mode or first non-null value within that group. Never group only by compound change — use the `Stint` column as the authoritative stint boundary.
 
 ```python
-# In FastAPI app startup
-import fastf1
-import os
-
-CACHE_DIR = os.getenv("FASTF1_CACHE", "./fastf1_cache")
-os.makedirs(CACHE_DIR, exist_ok=True)
-fastf1.Cache.enable_cache(CACHE_DIR)
+# Correct: use Stint column as ground truth for boundaries
+stints = laps.groupby(['Driver', 'Stint']).agg(
+    compound=('Compound', lambda x: x.dropna().mode().iloc[0] if x.dropna().any() else 'UNKNOWN'),
+    start_lap=('LapNumber', 'min'),
+    end_lap=('LapNumber', 'max'),
+    laps=('LapNumber', 'count'),
+)
 ```
 
 **Warning signs:**
-- Session loading consistently takes 30+ seconds every time, even for the same session
-- Large network traffic on every reload
-- `fastf1_http_cache.sqlite` file not present in your expected cache directory
+- Stint bars are fragmented for some drivers but not others
+- Some drivers show more stints than the actual race had pit stops
+- `None` or `'nan'` appearing in the compound color mapping, causing a KeyError
 
 **Phase to address:**
-Phase 1 (Backend bootstrap) — configure cache as the very first thing before any data loading.
+Phase implementing stint timeline — write a backend aggregation test covering: (1) a driver with a None-compound lap in the middle of a stint, (2) a driver who retires before their final stint completes.
 
 ---
 
-### Pitfall 3: FastF1 Cache Operations Are Not Thread-Safe
+### Pitfall 3: Position Chart with 20 Drivers as 20 Separate Traces Causes Plotly Performance Collapse
 
 **What goes wrong:**
-The FastF1 cache management functions (`Cache.set_disabled()`, `Cache.set_enabled()`, `Cache.disabled()` context manager) are explicitly documented as NOT multithreading-safe. In a FastAPI app serving concurrent requests that each try to load sessions, cache state corruption can occur — sessions load inconsistently or raise `OperationalError: unable to open database file`.
+A straightforward implementation of the position chart creates one Plotly trace per driver (20 traces × ~58 laps each = 1,160 data points total). This sounds small, but Plotly.js performance scales with trace count, not total point count. Benchmarks show rendering time going from ~80ms at 1 trace to ~650ms at 1,000 traces — and re-renders on every replay tick at 1 trace/driver trigger full Plotly diffs for all 20 traces simultaneously. At 2x replay speed this causes visible jank.
 
 **Why it happens:**
-Multiple concurrent requests trigger concurrent calls to FastF1 internals, which share global cache state. FastF1 was not designed for concurrent server use.
+Developers see only 20 drivers × 58 laps and think the dataset is tiny. The cost is per-trace overhead for layout calculation, hover detection zones, and legend rendering — not per-point rendering.
 
 **How to avoid:**
-Use a session loading pattern with a mutex or loading state cache at the application level — load each unique session only once, store the result in memory, and return the cached result to subsequent requests. Never toggle cache enable/disable state at runtime in a server context.
-
-```python
-# Application-level session cache
-_loaded_sessions: dict[str, Any] = {}
-_loading_locks: dict[str, asyncio.Lock] = {}
-
-async def get_or_load_session(key: str, year: int, event: str, session_type: str):
-    if key not in _loading_locks:
-        _loading_locks[key] = asyncio.Lock()
-    async with _loading_locks[key]:
-        if key not in _loaded_sessions:
-            session = await asyncio.to_thread(fastf1.get_session, year, event, session_type)
-            await asyncio.to_thread(session.load)
-            _loaded_sessions[key] = session
-    return _loaded_sessions[key]
-```
+Three mitigations, in order of impact:
+1. Use `scattergl` (WebGL) trace type instead of `scatter`. The existing GapChart uses `scatter` — position chart should use `scattergl` since it has many more data series.
+2. Wrap the full `data` array in `useMemo`, keyed on `laps` (already loaded once). Position never changes for historical data — only the cursor position changes. Separate the cursor shape from the traces so only the cursor shape updates on replay ticks, not all 20 traces.
+3. Pass `layout.datarevision` to force-trigger updates instead of relying on object identity diffing.
 
 **Warning signs:**
-- `OperationalError: unable to open database file` in FastF1 logs
-- Different API requests for the same session return inconsistent results
-- Cache corruption after concurrent load attempts
+- React DevTools shows position chart re-rendering on every replay tick
+- Browser framerate drops below 30fps during replay at 2x speed
+- Chrome performance profiler shows `Plotly.react` taking >100ms per tick
 
 **Phase to address:**
-Phase 1 (Backend session loading) — implement the in-memory session store from the start.
+Phase implementing position chart — build with `scattergl` from the start. Do not refactor from `scatter` later; it is a prop-level change but the chart shape API differs for WebGL.
 
 ---
 
-### Pitfall 4: Gap Calculation Using Raw Cumulative Lap Times Produces Inaccurate Results
+### Pitfall 4: Sector Heatmap Cell Count Blows Past Plotly's Comfortable Rendering Threshold
 
 **What goes wrong:**
-Computing "gap between two drivers" by summing `LapTime` values per driver and taking the difference produces inaccurate gaps. FastF1 lap times have known inaccuracies — pit lap times include stationary pit time, safety car laps are outliers, and laptimes for crash laps are NaT. Summing these produces cumulative error that grows lap-by-lap, making the gap chart drift from reality. The FastF1 docs warn explicitly: "Errors can stack up" when using integrated values.
+A full sector heatmap has 20 drivers × 58 laps × 3 sectors = 3,480 cells. Plotly heatmaps with arrays in this range take 10–30 seconds to render on first draw (community-reported for 2,000×1,000 arrays; our 3×20×58 is much smaller but Plotly's per-cell cost is high). The bigger issue: every re-render redraws the entire heatmap — if the component re-renders when `currentLap` changes in the Zustand store, the heatmap will stutter on every replay tick.
 
 **Why it happens:**
-It feels natural to compute `driver_a_total_time - driver_b_total_time` as the gap. It works for clean green-flag racing but produces garbage for pit laps, safety car laps, and first laps.
+The sector heatmap will subscribe to the same `useSessionStore` as every other component. If it subscribes to `currentLap` (to highlight the current lap column), it will re-render on every replay tick. The heatmap data itself never changes — only the highlight does.
 
 **How to avoid:**
-Use the `Time` column from the laps DataFrame, which represents the session time at lap end — this is derived directly from the timing stream and not accumulated. Gap between drivers at lap N = `session.laps.pick_driver(A).iloc[N]['Time'] - session.laps.pick_driver(B).iloc[N]['Time']`. Filter out inaccurate laps using `lap['IsAccurate']` or `pick_quicklaps()` for display purposes.
+Separate the static heatmap trace from the current-lap indicator. The heatmap `z` data is computed once from `laps` (which never changes after session load). Memoize the entire `data` array with `useMemo(() => ..., [laps])`. The current lap cursor can be a separate `shapes` entry updated via `layout.shapes` without re-computing the heatmap data at all. Use Plotly's `Plotly.relayout` path if needed, not a full React re-render.
+
+Also: limit the heatmap to at most 10 drivers by default (let the user add more). The sector heatmap is primarily useful for comparing a shortlist of drivers — 20 drivers at once produces an unreadable wall of color.
 
 **Warning signs:**
-- Gap chart shows driver "A" ahead by an unrealistic amount after a pit stop
-- Gap values diverge from what the TV broadcast shows
-- Gaps continue growing even when drivers are clearly side-by-side on circuit
+- Sector heatmap takes >3 seconds to appear after session load
+- Replay controls stutter while the heatmap is visible
+- React DevTools shows heatmap component in the re-render flame graph on every lap tick
 
 **Phase to address:**
-Phase 2 (Gap chart feature) — validate gap calculation logic against known race results before building the UI on top of it.
+Phase implementing sector heatmap — memoization strategy must be decided at design time, not retrofitted after noticing jank.
 
 ---
 
-### Pitfall 5: Position Data Is NaN for Practice and Qualifying Sessions
+### Pitfall 5: Lap Time Chart Shows Meaningless Spikes from In/Out Laps and Safety Car Laps
 
 **What goes wrong:**
-`session.laps['Position']` returns NaN for all FP1, FP2, FP3, Sprint Shootout, and Qualifying sessions. The "standings board" feature breaks with a KeyError or renders all positions as empty if code assumes position data always exists.
+A lap time chart that plots raw `LapTime` for all laps shows massive spikes on pit entry laps (20–40 seconds slower than a flying lap), pit exit laps (5–15 seconds slower), and safety car laps (10–30 seconds slower). These spikes dominate the Y-axis scale, compressing the actually interesting degradation signal into a flat band at the bottom of the chart. Users cannot see tire degradation.
 
 **Why it happens:**
-Race position tracking is inherently different from qualifying — in qualifying, there is no fixed "position" mid-session in the same sense. The F1 timing stream doesn't publish car position data for these session types. FastF1 documents this behavior but it's easy to miss.
+`LapTime` is always populated for all completed laps — it is not NaN for slow laps. Developers plot what they get. The `IsAccurate` flag exists but is not serialized by the current backend. Developers also forget that safety car laps are not flagged as inaccurate in `IsAccurate` — they need to be excluded separately using the `safetyCarPeriods` data already in the store.
 
 **How to avoid:**
-Add session type guards throughout the standings/position code. For qualifying, derive standings from lap time order, not from the `Position` column. For races, use `Position` normally. Handle NaT/NaN gracefully everywhere position is rendered.
+Apply three filters before plotting:
+1. Exclude inlaps: `PitInTime is not NaT / not null`
+2. Exclude outlaps: `PitOutTime is not NaT / not null`
+3. Exclude safety car laps: cross-reference lap number against `safetyCarPeriods` already in the Zustand store
 
-```python
-if session.session_info['Type'] == 'R':  # Race
-    positions = session.laps.groupby('Driver')['Position'].last()
-else:  # Qualifying / Practice
-    positions = session.laps.groupby('Driver')['LapTime'].min().rank()
-```
+Do NOT use `pick_quicklaps()` on the backend for this chart — `pick_quicklaps()` uses a statistical threshold relative to the session median and will silently exclude legitimate long-stint laps from older cars. Use explicit rule-based filtering instead. Render excluded laps as hollow markers (not removed) so users can see where they are, but use a different marker style.
 
 **Warning signs:**
-- Standings board shows all positions as blank or "N/A"
-- `ValueError` or NaN propagation errors when sorting by position
-- Only appears in testing with non-race session types
+- Y-axis range extends to 100+ seconds for any race
+- Degradation trend is invisible because the scale is dominated by pit laps
+- Multiple data points far below the main cluster for every stint
 
 **Phase to address:**
-Phase 2 (Standings board) — implement session-type-aware position logic from the start.
+Phase implementing lap time chart — filtering must be designed before the chart, not added as a fix after seeing the initial output.
+
+---
+
+### Pitfall 6: Adding Five New Charts Causes Every Component to Re-render on Replay Tick
+
+**What goes wrong:**
+The current `useSessionStore` is a single Zustand slice. Every component that calls `useSessionStore((s) => s.currentLap)` re-renders on every lap tick. With the v1.0 codebase (GapChart + StandingsBoard), this is two components re-rendering. With five new charts, this becomes seven components re-rendering simultaneously on every tick — potentially at 2x replay speed (every ~500ms). Even if each render is cheap, the cumulative cost of seven Plotly `react()` diffs per tick is significant.
+
+**Why it happens:**
+Zustand's subscription model is correct — components only re-render when their selected slice changes. But all seven charts subscribe to `currentLap`. The fix is not in Zustand; it is in chart architecture: charts should not re-render their full data on every lap tick. Only the cursor position should update.
+
+**How to avoid:**
+Establish an architectural pattern across all new charts: the chart data (`data` prop) is computed once from `laps` with `useMemo`, memoized until `laps` changes. Only the cursor `shape` reads `currentLap`. Use `layout.shapes` to update the cursor without touching `data`. The GapChart already does this correctly for its cursor — new charts should follow the same pattern from the start.
+
+If the position chart or lap time chart needs to highlight the current lap (e.g., grey out future laps), consider using Plotly's `layout.datarevision` + a separate overlay trace for the highlight, rather than recomputing all 20 traces.
+
+**Warning signs:**
+- React DevTools profiler shows all chart components highlighted on every replay tick
+- `useMemo` dependency arrays include `currentLap` for any component that renders 20+ traces
+- Any chart component's render function calls `laps.filter(...)` directly (without memoization)
+
+**Phase to address:**
+First chart added in v1.1 — establish the cursor-separation pattern immediately. Retrofitting five components later is expensive.
 
 ---
 
@@ -161,11 +167,12 @@ Phase 2 (Standings board) — implement session-type-aware position logic from t
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Hardcode FastAPI port 8000 in React fetch calls | Avoids Vite proxy setup | Breaks in any non-dev environment; CORS errors | Never — set up Vite proxy in Phase 1 |
-| Call `session.load()` without in-memory caching | Simpler code | Every chart interaction re-loads the full session (30–60s per request) | Never — load once per session key |
-| Use full react-plotly.js bundle | Easiest import | ~2 MB minified JS added to bundle; slower initial page load | Acceptable for local personal tool |
-| Skip `IsAccurate` filtering on lap data | Faster to implement | Pit laps, SC laps, crash laps pollute the gap chart with spikes | Never for the gap chart specifically |
-| Load all lap data in one JSON response | Simpler API contract | Full race is ~3000 rows × 30+ columns; serialization delay, large payload | Only if lap count is paginated or filtered |
+| Plot all 20 position chart drivers as `scatter` (not `scattergl`) | No code change from existing charts | Visible jank at 2x replay with 20 traces updating | Never for position chart — use `scattergl` |
+| Compute sector heatmap `z` data inside the render function | Simpler code | Heatmap recomputes on every replay tick | Never — always memoize |
+| Use `fastf1.api` for interval data | Direct access to stream fields | Breaks on any FastF1 minor version; maintainer warns it is private | Never — compute from public `Time` and `Position` |
+| Show all 20 drivers in sector heatmap by default | "More data" feels complete | Unreadable color wall; render time triples | Show top 8 by default with ability to expand |
+| Skip `IsAccurate` filtering on lap time chart | Faster to implement | Pit laps and SC laps dominate Y-axis, destroying degradation signal | Never for lap time chart |
+| New charts each fetch their own endpoint | Isolation | Additional backend roundtrips; data already in store from v1.0 SSE load | Only if chart requires data not currently serialized (e.g. sector times) |
 
 ---
 
@@ -173,12 +180,12 @@ Phase 2 (Standings board) — implement session-type-aware position logic from t
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| FastAPI + React CORS | `allow_origins=["*"]` in development, forgotten in reconfiguration | Set `allow_origins=["http://localhost:5173"]` (Vite default) explicitly from the start |
-| Vite proxy | Hardcoding full backend URL `http://localhost:8000` in React fetch calls | Configure `server.proxy` in `vite.config.ts`; use relative `/api/` paths in all fetch calls |
-| Vite proxy + Vite build | Assuming proxy works in production builds | Vite proxy ONLY works in `dev` mode; `npm run build` output has no proxy — irrelevant for local-only tool but document it |
-| FastF1 + FastAPI startup | Calling `fastf1.Cache.enable_cache()` per-request | Call once in FastAPI `lifespan` startup event, not per request handler |
-| Plotly + React state | Passing new object references for `data` and `layout` props on every render | Memoize with `useMemo` — react-plotly.js does deep comparison but repeated new objects still trigger unnecessary diffs |
-| pandas Timedelta → JSON | Returning pandas Timedelta objects directly from FastAPI | Convert all Timedelta/Timestamp to ISO strings or float seconds before serializing; FastAPI cannot auto-serialize pandas types |
+| FastF1 `Stint` column | Treating compound changes as stint boundaries | Use the integer `Stint` column as ground truth; compound changes within a stint (UNKNOWN → SOFT) are data corrections, not pit stops |
+| FastF1 sector times | Assuming `Sector1Time/Sector2Time/Sector3Time` are always populated | `IsAccurate=False` laps can have `NaT` sector times; outlap sector 1 is almost always `NaT` because the lap clock hasn't fully synced |
+| Existing `serialize_laps` backend function | Adding sector time fields and assuming pandas `NaT` serializes to `null` | `NaT` does NOT auto-serialize to JSON null via FastAPI — must pass through `serialize_timedelta()` which is already in the codebase |
+| Zustand `laps` array | Directly deriving chart data in component render | Always wrap in `useMemo` with `[laps]` dependency; `laps` is a stable reference after session load |
+| Plotly `useResizeHandler` on 5+ charts | Each chart independently listens for window resize events | All five charts should use `useResizeHandler={true}` with `style={{ width: '100%', height: '100%' }}` and a fixed container height — do not pass explicit `width`/`height` to the Plot component |
+| `react-plotly.js` `data` prop identity | Passing a new array literal `[...traces]` inline causes Plotly to re-diff on every React render | Always assign data to a `useMemo` result; never construct inline |
 
 ---
 
@@ -186,22 +193,11 @@ Phase 2 (Standings board) — implement session-type-aware position logic from t
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Sending full session DataFrame as JSON per replay tick | Chart re-render lags with each lap advance, large responses | Pre-compute all lap states server-side; send only the current lap's delta or a pre-aggregated summary list | Immediately — even at 58 laps × 20 drivers |
-| Plotly SVG rendering with all 58 laps × 2 drivers as individual points | Hover over chart lags; zoom is sluggish | Use `scattergl` (WebGL) trace type instead of `scatter`; or down-sample to ~200 points for the gap chart | At 500+ points per trace; gap chart has ~58 which is fine — telemetry would be the trigger |
-| Multiple concurrent `session.load()` calls for the same session | Server hangs; double-loading; cache contention | Application-level session store with asyncio Lock (see Pitfall 3) | At 2+ concurrent users / browser tabs |
-| Loading all session data upfront at startup | Long startup time; blocks FastAPI from being ready | Lazy-load sessions on first request, cache result in memory | Not a trap for single-user local app, but don't auto-load on startup |
-| Plotly re-rendering entire chart on every replay tick | React re-renders feel janky, chart flickers | Use `react-plotly.js` `onUpdate` with revision counter; update only the frame data, not the full layout | At > 1 tick/second replay speed |
-
----
-
-## Security Mistakes
-
-This is a local personal tool with no multi-user access, no authentication, and no sensitive data. Security surface is minimal. The relevant domain-specific risks are:
-
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| Committing the `fastf1_cache` directory to git | Repo size explodes (500+ MB); GitHub may ban the repo | Add `fastf1_cache/` to `.gitignore` immediately in Phase 1 |
-| Exposing FastAPI on `0.0.0.0` without firewall | Other devices on local network can access the API | Bind to `127.0.0.1` for local-only use; `0.0.0.0` only if LAN access is desired intentionally |
+| Position chart with 20 `scatter` traces updating on every replay tick | Chart lags 0.5–2s behind replay controls; jank at 2x speed | Use `scattergl`; separate cursor from data traces; memoize data | Immediately at 2x replay speed with 20 drivers |
+| Sector heatmap `z` recomputed in render | First paint after session load takes 3–10 seconds for heatmap | `useMemo(() => computeHeatmapZ(laps), [laps])` | On every render — adds up quickly |
+| Five charts each subscribing to `currentLap` with no memoization | Cascade of Plotly `react()` calls on every lap tick | Cursor shape = derived from `currentLap`; chart data = derived from `laps` only | At >2 charts watching `currentLap` simultaneously |
+| New backend endpoint that calls `session.load()` again | 30–60s load time on second chart type opened | Reuse session from in-memory store; only call `session.load()` once per session key | On first request if in-memory cache not checked |
+| Sending raw sector time DataFrames as new API response | Large JSON payload (58 laps × 20 drivers × 3 sectors = 3480 rows) | Aggregate on backend; send only pre-computed heatmap `z` matrix + driver index | Immediately for heatmap — send a 20×58×3 matrix, not 3480 individual rows |
 
 ---
 
@@ -209,23 +205,25 @@ This is a local personal tool with no multi-user access, no authentication, and 
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| No loading state during session.load() | UI appears frozen for 10–60s on first session load; user cannot tell if the app is working | Show progressive loading feedback via SSE or polling a `/session/status` endpoint; display steps ("Fetching timing data...", "Processing laps...") |
-| Replay speed set to real-time (1x) | A 90-minute race takes 90 minutes to replay | Default to 5x or 10x; offer a speed selector with 1x, 5x, 10x, 30x; instant jump-to-lap is higher priority than smooth animation |
-| Gap chart Y-axis shows raw seconds with no context | User cannot tell if a 3-second gap is large or small | Label the Y-axis clearly; add a "pit stop" marker so users understand gap spikes; consider showing as "+Xs" with sign indicating which driver leads |
-| Pit lap spikes on gap chart with no annotation | Gap chart shows sudden ±30 second jumps that look like data errors | Annotate pit stop laps with a vertical line or marker; or exclude pit laps from gap line and show them as separate annotations |
-| Session picker shows raw year/event name strings | "2024 Bahrain GP" vs "BAHRAIN GRAND PRIX 2024" — confusing inconsistency from FastF1 schedule data | Normalize display names using `session.event['EventName']` and `session.event['OfficialEventName']`; standardize format in API response |
+| Lap time chart Y-axis shows raw seconds (90–110s) with no compound coloring | Cannot distinguish stint pace from individual lap variation | Color each point by compound (SOFT=red, MEDIUM=yellow, HARD=white, etc.); break the line at pit stop boundaries |
+| Position chart shows all 20 drivers at equal visual weight | Visual noise — no way to focus on drivers of interest | Bold/highlight selected drivers (from `selectedDrivers` in store); dim the rest to 30% opacity |
+| Sector heatmap shows absolute times (sector 1 = 28.3s) | User cannot tell if 28.3s is fast or slow without reference | Color cells by delta from fastest sector time that lap, not by absolute time |
+| Stint timeline shows all retired/DNF drivers at full height | DNF drivers take same space as race finishers | Sort timeline: race finishers first, DNFs last, flagged by "DNF on lap X" label |
+| Interval history chart shows flat zero for the race leader | Misleading — leader appears to have zero interval, others have positive | Show leader's gap as NaN/hidden; only show intervals for P2–P20; or show gap to leader instead |
+| Five new charts dumped into the scrollable layout without grouping | Infinite scroll with no orientation | Group charts into labeled sections: "Tire Strategy" (stint timeline, lap time), "Race Order" (position chart, interval history), "Sector Analysis" (heatmap) |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Session loading:** Shows a loading state — verify it also handles the case where FastF1 raises an exception (network failure, F1 archive unavailable)
-- [ ] **Gap chart:** Looks correct for a clean race — verify it also handles safety car laps, virtual safety car periods, and pit stops without nonsensical spikes
-- [ ] **Standings board:** Shows correct positions for races — verify it degrades gracefully (or hides) for qualifying/practice sessions where `Position` is NaN
-- [ ] **Replay engine:** Advances laps correctly at 1x — verify jump-to-lap and that replay state resets when a different session is selected
-- [ ] **Backend serialization:** Returns JSON from FastAPI — verify no `pandas.Timedelta`, `numpy.float64`, or `pandas.NaT` objects slip through (these cause 500 errors silently during serialization)
-- [ ] **Cache path:** Cache is enabled in development — verify the cache path exists and is writable; verify it is in `.gitignore`
-- [ ] **CORS:** React can fetch from FastAPI in dev — verify CORS is configured for the exact Vite dev server origin (`localhost:5173` not `127.0.0.1:5173`)
+- [ ] **Stint timeline:** Renders for the happy path — verify it also handles: (1) driver with UNKNOWN compound stint, (2) driver who retires before completing a stint, (3) session with fewer than 3 compounds used
+- [ ] **Lap time chart:** Shows points — verify Y-axis is not dominated by pit lap spikes; confirm in/out laps are visually excluded or clearly distinguished
+- [ ] **Position chart:** Draws 20 lines — verify replay cursor moves without causing full chart re-render; confirm `scattergl` is used, not `scatter`
+- [ ] **Sector heatmap:** Displays color matrix — verify `None`/`NaT` sector times are shown as grey "no data" cells, not crashes; verify it does not re-render on every replay tick
+- [ ] **Interval history:** Shows gap lines — verify the calculation matches known race intervals (not just "looks plausible"); confirm it handles the race leader row without showing zero or NaN errors
+- [ ] **All five charts:** Memoization — confirm `data` prop for each chart is wrapped in `useMemo` with `[laps]` (not `[laps, currentLap]`) as dependency
+- [ ] **Backend:** New sector time serialization — verify `Sector1Time/Sector2Time/Sector3Time` are passed through `serialize_timedelta()`, producing `null` in JSON for NaT, not a serialization error
+- [ ] **Dashboard layout:** Five charts added — verify sticky header still works; scrolling to bottom does not cause replay controls to disappear; Plotly mode bar remains accessible on each chart
 
 ---
 
@@ -233,12 +231,12 @@ This is a local personal tool with no multi-user access, no authentication, and 
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Event loop blocked by sync session.load() | MEDIUM | Refactor endpoint to use `asyncio.to_thread()`; add in-memory session store; add background task pattern |
-| Cache not configured — slow loads | LOW | Add `fastf1.Cache.enable_cache()` to startup; add `fastf1_cache/` to `.gitignore`; existing sessions will be re-fetched once then cached |
-| Gap calculation using summed lap times | MEDIUM | Rewrite gap calculation to use `session.laps['Time']` (session time at lap end) instead of cumulative `LapTime`; retest all gap chart output |
-| Position data NaN in qualifying | LOW | Add session-type check; derive standings from lap time rank for non-race sessions |
-| pandas types in JSON responses | LOW | Add a serialization utility that converts all pandas/numpy types to Python primitives; apply to all response models |
-| react-plotly.js bundle too large | LOW | Switch to `plotly.js/dist/plotly-basic` partial bundle via `createPlotComponent` factory |
+| Interval built on `fastf1.api` (breaks on FastF1 upgrade) | MEDIUM | Replace with `Time` + `Position` delta calculation; output format stays the same |
+| Stint compound grouped by compound-change instead of `Stint` column | MEDIUM | Rewrite aggregation logic; re-test all stint boundary edge cases |
+| Position chart performance jank | LOW | Change `type: 'scatter'` to `type: 'scattergl'`; add `useMemo` to data array |
+| Sector heatmap re-rendering on replay tick | LOW | Add `useMemo` with `[laps]` dependency; move currentLap cursor to `shapes` |
+| Lap time chart scale dominated by pit laps | LOW | Add three-line filter (no inlap, no outlap, no SC lap) in backend aggregation |
+| All charts re-rendering on every tick | MEDIUM | Audit all `useSessionStore` subscriptions; extract cursor-only components; memoize data |
 
 ---
 
@@ -246,35 +244,33 @@ This is a local personal tool with no multi-user access, no authentication, and 
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Blocking event loop (session.load) | Phase 1: Backend foundation | Load a session while simultaneously hitting another API endpoint — both should respond |
-| Cache not configured | Phase 1: Backend foundation | Load same session twice; second load should complete in <2s |
-| Thread-unsafe cache operations | Phase 1: Backend foundation | Open two browser tabs, select same session in both simultaneously — no errors |
-| Gap calculation with cumulative times | Phase 2: Gap chart | Compare gap at lap 10 to a known broadcast screenshot; verify pit laps show spikes correctly annotated |
-| Position NaN for non-race sessions | Phase 2: Standings board | Load a qualifying session and verify standings render without errors |
-| CORS / Vite proxy misconfiguration | Phase 1: Frontend scaffold | Verify `fetch('/api/sessions')` works from React dev server without CORS error |
-| pandas serialization types | Phase 1: Backend foundation | Write a test that serializes a sample session response and asserts no non-primitive types escape |
-| No loading state for session.load() | Phase 1: Backend + Phase 2: UI | Observe the UI while loading a fresh (uncached) session — progress feedback should appear within 1s |
+| Interval history using private `fastf1.api` | Phase: interval history endpoint design | Confirm zero `fastf1.api` imports in new backend code; verify interval matches broadcast for one known race lap |
+| Stint compound None/UNKNOWN handling | Phase: stint timeline backend aggregation | Unit test covering a driver with a `None` compound lap mid-stint; output must show one continuous stint bar |
+| Position chart trace-count performance | Phase: position chart component | Open React DevTools profiler during 2x replay; position chart must not appear in re-render flame graph during lap ticks |
+| Sector heatmap replay tick re-renders | Phase: sector heatmap component | Add `console.count('heatmap render')` during dev; advancing 10 laps must not trigger 10 heatmap renders |
+| Lap time chart pit lap spikes | Phase: lap time chart backend endpoint | Plot chart for 2024 Australian GP; Y-axis must be in 85–100s range, not 60–160s range |
+| All five charts re-rendering on tick | Phase: first new chart added (establish pattern) | React DevTools profiler during replay: only cursor-related components should highlight per tick |
+| Sector time NaT serialization | Phase: backend sector endpoint | Add test that serializes a lap with `NaT` sector times; assert JSON output contains `null`, not a 500 error |
 
 ---
 
 ## Sources
 
-- [FastF1 General Functions — Cache docs, threading warnings](https://docs.fastf1.dev/fastf1.html)
-- [FastF1 Accurate Calculations howto](https://docs.fastf1.dev/howto_accurate_calculations.html)
-- [FastF1 Timing and Telemetry Data — Position NaN documentation](http://docs.fastf1.dev/core.html)
-- [FastF1 GitHub Discussion #517 — Generated data, tyres, laptimes quirks](https://github.com/theOehrly/Fast-F1/discussions/517)
-- [FastF1 GitHub Discussion #445 — Ergast API deprecation](https://github.com/theOehrly/Fast-F1/discussions/445)
-- [FastF1 GitHub Issue #851 — 2026 pre-season testing data bug](https://github.com/theOehrly/Fast-F1/issues/851)
-- [FastAPI Concurrency and async/await docs](https://fastapi.tiangolo.com/async/)
-- [FastAPI CORS middleware](https://fastapi.tiangolo.com/tutorial/cors/)
-- [FastAPI Background Tasks](https://fastapi.tiangolo.com/tutorial/background-tasks/)
-- [FastAPI hidden thread pool overhead — DEV Community](https://dev.to/bkhalifeh/fastapi-performance-the-hidden-thread-pool-overhead-you-might-be-missing-2ok6)
-- [plotly/plotly.js Issue #3227 — Performance with many traces](https://github.com/plotly/plotly.js/issues/3227)
-- [plotly/plotly.js Issue #5790 — Large dataset performance regression](https://github.com/plotly/plotly.js/issues/5790)
-- [react-plotly.js bundle size modularization issue #98](https://github.com/plotly/react-plotly.js/issues/98)
-- [Vite Server Proxy options](https://vite.dev/config/server-options)
-- [FastAPI + React CORS fix — cleverzone medium](https://cleverzone.medium.com/how-to-fix-cors-in-fastapi-a9b1f597661b)
+- [FastF1 ENH Issue #735 — IntervalToPositionAhead / GapToLeader via fastf1.api (private)](https://github.com/theOehrly/Fast-F1/issues/735)
+- [FastF1 BUG Issue #768 — Tyre compound data differences after v3.6.0](https://github.com/theOehrly/Fast-F1/issues/768)
+- [FastF1 BUG Issue #779 — Wrong tyre compound data (2025 Belgian GP intermediate/medium)](https://github.com/theOehrly/Fast-F1/issues/779)
+- [FastF1 Discussion #517 — Generated data, tyres, lap times accuracy philosophy](https://github.com/theOehrly/Fast-F1/discussions/517)
+- [FastF1 PR #716 — Restrict compound backfill to last UNKNOWN](https://github.com/theOehrly/Fast-F1/pull/716)
+- [FastF1 Accurate Calculations howto — 4-5 Hz sample rate, integration error, interpolation warnings](https://docs.fastf1.dev/howto_accurate_calculations.html)
+- [FastF1 Timing and Telemetry Data — IsAccurate criteria, inlap/outlap definitions](http://docs.fastf1.dev/core.html)
+- [FastF1 Tyre Strategies Example — correct Stint-based aggregation pattern](https://docs.fastf1.dev/gen_modules/examples_gallery/plot_strategy.html)
+- [plotly/plotly.js Issue #3227 — Performance collapses with many traces (trace count, not point count)](https://github.com/plotly/plotly.js/issues/3227)
+- [plotly/plotly.js Issue #7489 — Performance issues with many traces vs. single traces](https://github.com/plotly/plotly.js/issues/7489)
+- [plotly/plotly.js Issue #3416 — Multiple charts on one page performance](https://github.com/plotly/plotly.js/issues/3416)
+- [Plotly Community — Heatmap slow for large data arrays](https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007)
+- [react-plotly.js README — data prop identity and datarevision behavior](https://github.com/plotly/react-plotly.js)
+- [Zustand Discussion #2642 — More re-renders than expected; selector patterns](https://github.com/pmndrs/zustand/discussions/2642)
 
 ---
-*Pitfalls research for: F1 Race Replay Dashboard (FastF1 + FastAPI + React + Plotly)*
+*Pitfalls research for: F1 Strategy & Analysis Views — v1.1 (stint timeline, lap time chart, position chart, sector heatmap, interval history)*
 *Researched: 2026-03-13*
