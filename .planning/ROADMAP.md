@@ -12,7 +12,7 @@ This roadmap builds a working race replay dashboard in four phases. The session 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Backend Foundation** - Session loading pipeline with FastF1 caching and SSE progress streaming
+- [x] **Phase 1: Backend Foundation** - Session loading pipeline with FastF1 caching and SSE progress streaming (completed 2026-03-13)
 - [ ] **Phase 2: Gap Chart + Replay Engine** - Core product loop: selectable driver gap chart synchronized with replay controls
 - [ ] **Phase 3: Standings Board** - Per-lap standings table showing positions, gaps, tires, and pit stops
 - [ ] **Phase 4: Chart Enhancements** - Pit stop annotations and safety car shading on the gap chart
@@ -28,7 +28,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. After selecting a session, user sees a loading progress bar or percentage indicator that updates in real time during the FastF1 fetch — the UI does not appear frozen
   3. After the first load completes, selecting the same session again loads instantly (under 1 second) from disk cache
   4. All lap data is available in the frontend Zustand store after a successful load — confirmed by checking network tab or dev console, no follow-up API calls needed
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [ ] 01-01-PLAN.md — Backend API (schedule + SSE session loading + caching) and test suite
@@ -75,7 +75,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Backend Foundation | 3/4 | In Progress|  |
+| 1. Backend Foundation | 4/4 | Complete   | 2026-03-13 |
 | 2. Gap Chart + Replay Engine | 0/TBD | Not started | - |
 | 3. Standings Board | 0/TBD | Not started | - |
 | 4. Chart Enhancements | 0/TBD | Not started | - |
