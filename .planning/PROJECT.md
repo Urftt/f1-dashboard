@@ -22,7 +22,11 @@ Users can see the gap between any two drivers plotted over time — the single m
 
 ### Active
 
-(None — next milestone not yet planned)
+- [ ] Stint timeline — horizontal bars showing each driver's tire stints (compound, length, pit laps)
+- [ ] Lap time chart — multi-driver selectable lap time plot showing degradation, stint pace, strategy
+- [ ] Position chart — all-driver position over laps (spaghetti chart) showing overtakes and strategy
+- [ ] Sector comparison heatmap — multi-driver lap-by-sector grid, color-coded by relative pace
+- [ ] Interval history — gap-to-car-ahead over time, showing hunting vs. managing phases
 
 ### Out of Scope
 
@@ -39,6 +43,17 @@ Users can see the gap between any two drivers plotted over time — the single m
 Shipped v1.0 with ~2,000 LOC TypeScript/React frontend and Python/FastAPI backend.
 Tech stack: React 19, Vite 8, Tailwind CSS v4, Zustand, Plotly.js, FastAPI, FastF1, Pydantic.
 All 18 v1 requirements satisfied. 4 minor tech debt items (non-blocking).
+
+## Current Milestone: v1.1 Strategy & Analysis Dashboard
+
+**Goal:** Add five new analysis views to the scrollable dashboard — stint timeline, lap time chart, position chart, sector comparison heatmap, and interval history — giving users deeper strategic insight into race data.
+
+**Target features:**
+- Stint timeline (tire strategy overview)
+- Lap time chart (degradation & stint pace)
+- Position chart (spaghetti chart)
+- Sector comparison heatmap
+- Interval history
 
 ## Constraints
 
@@ -61,4 +76,4 @@ All 18 v1 requirements satisfied. 4 minor tech debt items (non-blocking).
 | HTML range input for scrubber | Simpler than component library slider for integer lap steps | ✓ Good — sufficient, no extra dependency |
 
 ---
-*Last updated: 2026-03-13 after v1.0 milestone*
+*Last updated: 2026-03-13 after v1.1 milestone start*
