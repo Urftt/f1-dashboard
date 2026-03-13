@@ -19,7 +19,7 @@ function StandingRowItem({ row, mode }: { row: StandingRow; mode: GapMode }) {
     gapCell = `DNF L${row.retiredOnLap}`
   } else if (row.status === 'finished') {
     gapCell = 'FIN'
-  } else if (row.position === 1) {
+  } else if (row.position !== null && row.position === 1) {
     gapCell = '---'
   } else if (row.isLapped) {
     gapCell = row.lapsDown === 1 ? '+1 LAP' : `+${row.lapsDown} LAPS`
@@ -38,11 +38,11 @@ function StandingRowItem({ row, mode }: { row: StandingRow; mode: GapMode }) {
     >
       {/* Position */}
       <div className="w-9 flex items-center gap-0.5 text-sm font-mono shrink-0">
-        <span>{isInactive && row.position >= 99 ? '—' : row.position}</span>
-        {row.prevPosition !== null && row.position < row.prevPosition && (
+        <span>{row.position ?? '—'}</span>
+        {row.prevPosition !== null && row.position !== null && row.position < row.prevPosition && (
           <ChevronUp size={12} className="text-green-500" />
         )}
-        {row.prevPosition !== null && row.position > row.prevPosition && (
+        {row.prevPosition !== null && row.position !== null && row.position > row.prevPosition && (
           <ChevronDown size={12} className="text-red-500" />
         )}
       </div>

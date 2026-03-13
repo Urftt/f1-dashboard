@@ -41,7 +41,7 @@ export interface StandingRow {
   driver: string           // abbreviation (e.g., "VER")
   fullName: string         // from DriverInfo
   teamColor: string        // hex from DriverInfo
-  position: number
+  position: number | null    // null when no valid position (e.g. DNF)
   prevPosition: number | null  // position at currentLap - 1 (null at lap 1)
   gap: number | null       // seconds behind leader (null for leader)
   interval: number | null  // seconds behind car ahead (null for leader)

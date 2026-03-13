@@ -96,11 +96,16 @@ export function useStandingsData(): StandingRow[] {
       }
     }
 
-    // Sort active rows by position
-    activeRows.sort((a, b) => (a.row.Position ?? 99) - (b.row.Position ?? 99))
+    // Normalize position: treat 99 from the API as "no real position"
+    const realPosition = (p: number | null) => (p !== null && p < 99) ? p : null
+    const sortByPosition = (a: typeof activeRows[number], b: typeof activeRows[number]) =>
+      (realPosition(a.row.Position) ?? 999) - (realPosition(b.row.Position) ?? 999)
+
+    // Sort active rows by position (null/99 positions sink to bottom)
+    activeRows.sort(sortByPosition)
 
     // Sort inactive rows by their last known position
-    inactiveRows.sort((a, b) => (a.row.Position ?? 99) - (b.row.Position ?? 99))
+    inactiveRows.sort(sortByPosition)
 
     const allRows = [...activeRows, ...inactiveRows]
     if (allRows.length === 0) return []
@@ -147,7 +152,7 @@ export function useStandingsData(): StandingRow[] {
         driver: row.Driver,
         fullName: info?.fullName ?? row.Driver,
         teamColor: info?.teamColor ?? '#888888',
-        position: row.Position ?? 99,
+        position: realPosition(row.Position),
         prevPosition: status === 'racing' ? prevPosition : null,
         gap,
         interval,
