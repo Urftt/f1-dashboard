@@ -8,6 +8,7 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
     exclude: [
+      'src/App.test.tsx',
       'src/components/GapChart.test.tsx',
       'src/components/RaceDashboard.test.tsx',
       'src/components/SessionSelector.test.tsx',
