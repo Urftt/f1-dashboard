@@ -1,5 +1,6 @@
 import { GapChart } from '@/components/GapChart/GapChart'
 import { DriverSelector } from '@/components/GapChart/DriverSelector'
+import { StandingsBoard } from '@/components/StandingsBoard/StandingsBoard'
 
 /**
  * Dashboard — Two-column layout for the main app body.
@@ -18,13 +19,9 @@ export function Dashboard() {
         <GapChart />
       </div>
 
-      {/* Right column — standings placeholder */}
+      {/* Right column — standings board */}
       <div className="lg:col-span-2">
-        <div className="h-full min-h-[200px] flex items-center justify-center bg-card border border-border rounded-lg p-6">
-          <p className="text-sm text-muted-foreground text-center">
-            Standings coming in Phase 3
-          </p>
-        </div>
+        <StandingsBoard />
       </div>
     </div>
   )
