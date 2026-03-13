@@ -24,3 +24,5 @@ export interface LapRow {
 }
 
 export type LoadingStage = 'idle' | 'loading' | 'complete' | 'error'
+
+export type ReplaySpeed = 0.5 | 1 | 2 | 4
