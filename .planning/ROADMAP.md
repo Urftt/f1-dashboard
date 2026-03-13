@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Backend Foundation** - Session loading pipeline with FastF1 caching and SSE progress streaming (completed 2026-03-13)
 - [ ] **Phase 2: Gap Chart + Replay Engine** - Core product loop: selectable driver gap chart synchronized with replay controls
 - [x] **Phase 3: Standings Board** - Per-lap standings table showing positions, gaps, tires, and pit stops (completed 2026-03-13)
-- [ ] **Phase 4: Chart Enhancements** - Pit stop annotations and safety car shading on the gap chart
+- [x] **Phase 4: Chart Enhancements** - Pit stop annotations and safety car shading on the gap chart (completed 2026-03-13)
 
 ## Phase Details
 
@@ -76,7 +76,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User sees vertical lines on the gap chart at laps where either selected driver pitted, clearly distinguishing gap changes caused by strategy from genuine on-track pace differences
   2. User sees yellow-shaded lap ranges on the gap chart where a Safety Car or VSC was deployed, so gap collapses under neutralized conditions are not misread as pace changes
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 04-01-PLAN.md — Backend SC/VSC period parsing, Pydantic model, SSE payload, frontend type/store/SSE wiring
@@ -92,4 +92,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Backend Foundation | 4/4 | Complete   | 2026-03-13 |
 | 2. Gap Chart + Replay Engine | 3/4 | In Progress|  |
 | 3. Standings Board | 2/2 | Complete   | 2026-03-13 |
-| 4. Chart Enhancements | 0/2 | Not started | - |
+| 4. Chart Enhancements | 2/2 | Complete   | 2026-03-13 |
