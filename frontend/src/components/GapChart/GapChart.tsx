@@ -15,7 +15,7 @@ import { useSessionStore } from '@/stores/sessionStore'
  * - Vertical dashed cursor line at currentLap (from replay store)
  */
 export function GapChart() {
-  const { segments } = useGapData()
+  const { segments, pitStopShapes, pitStopHoverTraces, scShapes } = useGapData()
   const currentLap = useSessionStore((s) => s.currentLap)
 
   const cursorShape =
@@ -55,7 +55,11 @@ export function GapChart() {
     margin: { t: 16, r: 8, b: 40, l: 56 },
     showlegend: false,
     hovermode: 'closest',
-    shapes: cursorShape,
+    shapes: [
+      ...scShapes,       // layer: 'below' — SC/VSC/RED shading behind traces
+      ...pitStopShapes,  // layer: 'above' — pit lines on top of shading
+      ...cursorShape,    // layer: 'above' — replay cursor on top of everything
+    ],
   }
 
   if (segments.length === 0) {
@@ -71,7 +75,7 @@ export function GapChart() {
   return (
     <div className="h-[400px] min-h-[350px] w-full">
       <Plot
-        data={segments}
+        data={[...segments, ...pitStopHoverTraces]}
         layout={layout}
         useResizeHandler={true}
         style={{ width: '100%', height: '100%' }}
