@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-03-13T13:04:36.175Z"
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-03-13T13:59:36.652Z"
 last_activity: 2026-03-13 — Roadmap created, all 18 v1 requirements mapped across 4 phases
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
   percent: 0
 ---
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-gap-chart-replay-engine P01 | 8min | 2 tasks | 5 files |
 | Phase 02-gap-chart-replay-engine P03 | 2min | 2 tasks | 2 files |
 | Phase 02-gap-chart-replay-engine P02 | 2min | 2 tasks | 2 files |
+| Phase 02-gap-chart-replay-engine P04 | 55min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,10 @@ Recent decisions affecting current work:
 - [Phase 02-gap-chart-replay-engine]: HTML range input used for scrubber instead of @base-ui Slider — simpler, sufficient for integer lap steps
 - [Phase 02-gap-chart-replay-engine]: Auto-restart: pressing play when currentLap >= maxLap resets to lap 1 then plays — prevents dead play button at race end
 - [Phase 02-gap-chart-replay-engine]: Plotly dark theme via template: plotly_dark with transparent bg; yref paper on cursor shape for full-height span
+- [Phase 02-gap-chart-replay-engine]: react-plotly.js CJS default export double-wrap: fix by checking for .default on the imported value before use
+- [Phase 02-gap-chart-replay-engine]: Driver/team data: served dynamically from FastF1 session via serialize_drivers — no hardcoded lookup tables
+- [Phase 02-gap-chart-replay-engine]: Plotly hovermode: closest instead of x-unified prevents tooltip from obscuring the gap line
+- [Phase 02-gap-chart-replay-engine]: Single invisible hover trace: overlay a transparent scatter trace to unify tooltip without visual duplication
 
 ### Critical Pitfalls (from research)
 
@@ -100,6 +105,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T13:04:36.174Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-03-13T13:59:36.650Z
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None
