@@ -31,10 +31,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 4/4 plans complete
 
 Plans:
-- [ ] 01-01-PLAN.md — Backend API (schedule + SSE session loading + caching) and test suite
-- [ ] 01-02-PLAN.md — Frontend skeleton (Vite, Tailwind, shadcn/ui, Zustand, proxy config)
-- [ ] 01-03-PLAN.md — Frontend UI: Zustand store, SSE client, cascading session selector, progress bar, empty state
-- [ ] 01-04-PLAN.md — End-to-end integration verification (human checkpoint)
+- [x] 01-01-PLAN.md — Backend API (schedule + SSE session loading + caching) and test suite
+- [x] 01-02-PLAN.md — Frontend skeleton (Vite, Tailwind, shadcn/ui, Zustand, proxy config)
+- [x] 01-03-PLAN.md — Frontend UI: Zustand store, SSE client, cascading session selector, progress bar, empty state
+- [x] 01-04-PLAN.md — End-to-end integration verification (human checkpoint)
 
 ### Phase 2: Gap Chart + Replay Engine
 **Goal**: Users can select two drivers and see their gap plotted over time, then replay the session lap-by-lap with the chart cursor tracking the current lap
@@ -45,7 +45,13 @@ Plans:
   2. User can hover over the chart and see exact gap values and lap numbers in a tooltip
   3. User can press play and watch the chart cursor advance lap by lap at the selected speed (0.5x, 1x, 2x, 4x); pressing pause freezes it
   4. User can drag the lap scrubber to any lap and the chart cursor jumps to that lap instantly
-**Plans**: TBD
+**Plans:** 4 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Data layer: install Plotly, extend Zustand store with replay state, driver lookups, gap calculation hook
+- [ ] 02-02-PLAN.md — Gap chart: Plotly scatter with dark theme, team-color lines, tooltip, cursor; driver selector dropdowns
+- [ ] 02-03-PLAN.md — Replay engine: timer hook with stale-closure prevention, replay controls bar (play/pause, speed, scrubber)
+- [ ] 02-04-PLAN.md — Dashboard layout: two-column wiring, sticky header, dark theme, end-to-end human verification
 
 ### Phase 3: Standings Board
 **Goal**: Users can see a synchronized standings table that shows every driver's position, gaps, tire compound, tire age, and pit stop count at the current replay lap
@@ -76,6 +82,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Backend Foundation | 4/4 | Complete   | 2026-03-13 |
-| 2. Gap Chart + Replay Engine | 0/TBD | Not started | - |
+| 2. Gap Chart + Replay Engine | 0/4 | Planning complete | - |
 | 3. Standings Board | 0/TBD | Not started | - |
 | 4. Chart Enhancements | 0/TBD | Not started | - |
