@@ -21,7 +21,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **GAP-02**: User sees an interactive gap-over-time chart for the selected pair
 - [x] **GAP-03**: User can hover to see exact gap values and lap numbers
 - [ ] **GAP-04**: User sees vertical annotations on laps where either driver pitted
-- [ ] **GAP-05**: User sees yellow shading on laps under Safety Car or VSC
+- [x] **GAP-05**: User sees yellow shading on laps under Safety Car or VSC
 
 ### Replay
 
@@ -77,7 +77,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GAP-02 | Phase 2 | Complete |
 | GAP-03 | Phase 2 | Complete |
 | GAP-04 | Phase 4 | Pending |
-| GAP-05 | Phase 4 | Pending |
+| GAP-05 | Phase 4 | Complete |
 | REPL-01 | Phase 2 | Complete |
 | REPL-02 | Phase 2 | Complete |
 | REPL-03 | Phase 2 | Complete |

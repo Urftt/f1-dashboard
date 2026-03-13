@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 4 context gathered
-last_updated: "2026-03-13T16:08:15.582Z"
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-03-13T18:34:38.794Z"
 last_activity: 2026-03-13 — Roadmap created, all 18 v1 requirements mapped across 4 phases
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 12
+  completed_plans: 11
   percent: 0
 ---
 
@@ -60,6 +60,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-gap-chart-replay-engine P04 | 55min | 2 tasks | 12 files |
 | Phase 03-standings-board P01 | 4min | 2 tasks | 4 files |
 | Phase 03-standings-board P02 | 30min | 1 tasks | 4 files |
+| Phase 04-chart-enhancements P01 | 4min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,7 @@ Recent decisions affecting current work:
 - [Phase 03-standings-board]: @base-ui/react/tooltip: use 'import { Tooltip } from @base-ui/react/tooltip' then Tooltip.Root etc — named subpath exports cause Vite MISSING_EXPORT errors
 - [Phase 03-standings-board]: Position 99 normalization: F1 API sends Position 99 for retirements — normalize to null in useStandingsData, display '—' in StandingsBoard, sort to bottom
 - [Phase 03-standings-board]: DNF classification: use data-derived race length (max lap across drivers) rather than totalLaps store field to detect finished/retired status
+- [Phase 04-chart-enhancements]: parse_safety_car_periods uses session.laps for lap mapping via _time_to_lap; unclosed periods included with end_lap=max; adjacent SC->VSC creates two separate periods; _time_to_lap returns 1 not max lap when all times NaT
 
 ### Critical Pitfalls (from research)
 
@@ -110,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T16:08:15.580Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-chart-enhancements/04-CONTEXT.md
+Last session: 2026-03-13T18:34:38.792Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: None
