@@ -19,20 +19,6 @@ class SessionTypeInfo(BaseModel):
     name: str
 
 
-class LapData(BaseModel):
-    """Lap data for a single lap from a session."""
-
-    LapNumber: int | None
-    Driver: str
-    LapTime: float | None  # seconds
-    Time: float | None  # session timestamp at lap end (seconds)
-    PitInTime: float | None
-    PitOutTime: float | None
-    Compound: str | None
-    TyreLife: float | None
-    Position: int | None
-    Stint: int | None
-
 
 class ProgressEvent(BaseModel):
     """SSE progress event during session loading."""

@@ -6,7 +6,7 @@ import { StandingsBoard } from '@/components/StandingsBoard/StandingsBoard'
  * Dashboard — Two-column layout for the main app body.
  *
  * Left column (~60%): DriverSelector above GapChart
- * Right column (~40%): Standings placeholder for Phase 3
+ * Right column (~40%): StandingsBoard
  *
  * Only rendered when stage === 'complete' (enforced by App.tsx).
  */
