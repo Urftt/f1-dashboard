@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 2 context gathered
-last_updated: "2026-03-13T12:16:34.852Z"
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-03-13T13:01:07.737Z"
 last_activity: 2026-03-13 — Roadmap created, all 18 v1 requirements mapped across 4 phases
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 8
+  completed_plans: 5
   percent: 0
 ---
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-backend-foundation P01 | 6min | 2 tasks | 13 files |
 | Phase 01-backend-foundation P03 | 2min | 2 tasks | 11 files |
 | Phase 01-backend-foundation P04 | 60min | 1 tasks | 1 files |
+| Phase 02-gap-chart-replay-engine P01 | 8min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,8 @@ Recent decisions affecting current work:
 - [Phase 01-backend-foundation]: fetch-event-source onerror rethrows to prevent automatic SSE reconnect on session load failure
 - [Phase 01-backend-foundation]: base-ui Select onValueChange type is (string|null) — null guard required before passing to typed store actions
 - [Phase 01-backend-foundation]: shadcn/ui Progress is self-contained — value prop controls indicator; passing children caused duplicate bar
+- [Phase 02-gap-chart-replay-engine]: Gap uses LapRow.Time (session elapsed time) not LapTime to avoid cumulative errors from safety cars and pit stops
+- [Phase 02-gap-chart-replay-engine]: --legacy-peer-deps required for react-plotly.js React 18 peer dep cap — works fine at runtime with React 19
 
 ### Critical Pitfalls (from research)
 
@@ -91,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T12:16:34.851Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-gap-chart-replay-engine/02-CONTEXT.md
+Last session: 2026-03-13T13:01:07.736Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None

@@ -17,8 +17,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Gap Chart
 
-- [ ] **GAP-01**: User can select two drivers from the loaded session
-- [ ] **GAP-02**: User sees an interactive gap-over-time chart for the selected pair
+- [x] **GAP-01**: User can select two drivers from the loaded session
+- [x] **GAP-02**: User sees an interactive gap-over-time chart for the selected pair
 - [ ] **GAP-03**: User can hover to see exact gap values and lap numbers
 - [ ] **GAP-04**: User sees vertical annotations on laps where either driver pitted
 - [ ] **GAP-05**: User sees yellow shading on laps under Safety Car or VSC
@@ -73,8 +73,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SESS-03 | Phase 1 | Complete |
 | SESS-04 | Phase 1 | Complete |
 | SESS-05 | Phase 1 | Complete |
-| GAP-01 | Phase 2 | Pending |
-| GAP-02 | Phase 2 | Pending |
+| GAP-01 | Phase 2 | Complete |
+| GAP-02 | Phase 2 | Complete |
 | GAP-03 | Phase 2 | Pending |
 | GAP-04 | Phase 4 | Pending |
 | GAP-05 | Phase 4 | Pending |
