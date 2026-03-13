@@ -49,7 +49,7 @@ Key decisions carrying forward into v1.1:
 
 ### Pending Todos
 
-None.
+1 pending todo(s). See `.planning/todos/pending/`.
 
 ### Blockers/Concerns
 
