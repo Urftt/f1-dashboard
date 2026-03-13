@@ -28,7 +28,7 @@ Requirements for v1.1 Strategy & Analysis Dashboard. Each maps to roadmap phases
 
 ### Dashboard Layout
 
-- [ ] **LAYOUT-01**: New analysis charts are displayed in a scrollable dashboard below the existing gap chart and standings board
+- [x] **LAYOUT-01**: New analysis charts are displayed in a scrollable dashboard below the existing gap chart and standings board
 
 ## Future Requirements
 
@@ -69,7 +69,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ENHANCE-02 | Phase 6 | Pending |
 | ENHANCE-03 | Phase 6 | Pending |
 | ENHANCE-04 | Phase 7 | Pending |
-| LAYOUT-01 | Phase 5 | Pending |
+| LAYOUT-01 | Phase 5 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 11 total

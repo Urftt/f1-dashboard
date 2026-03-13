@@ -21,7 +21,7 @@
 
 **Milestone Goal:** Add five analysis views to the scrollable dashboard — stint timeline, lap time chart, position chart, sector comparison heatmap, and interval history — giving users deeper strategic insight into race data.
 
-- [ ] **Phase 5: Dashboard Layout + Stint Timeline** - Scrollable analysis section and first chart; establishes shared utilities and memoization pattern
+- [x] **Phase 5: Dashboard Layout + Stint Timeline** - Scrollable analysis section and first chart; establishes shared utilities and memoization pattern (completed 2026-03-13)
 - [ ] **Phase 6: Lap Time Chart + Position Chart** - Per-driver pace and race order views with driver visibility toggle and SC shading
 - [ ] **Phase 7: Interval History** - Gap-to-car-ahead chart showing DRS hunting phases, with spoiler-free progressive reveal
 - [ ] **Phase 8: Sector Comparison Heatmap** - New backend endpoint and per-driver per-sector heatmap with delta coloring
@@ -83,7 +83,7 @@ Plans:
 | 2. Gap Chart + Replay Engine | v1.0 | 4/4 | Complete | 2026-03-13 |
 | 3. Standings Board | v1.0 | 2/2 | Complete | 2026-03-13 |
 | 4. Chart Enhancements | v1.0 | 2/2 | Complete | 2026-03-13 |
-| 5. Dashboard Layout + Stint Timeline | 1/2 | In Progress|  | - |
+| 5. Dashboard Layout + Stint Timeline | 2/2 | Complete   | 2026-03-13 | - |
 | 6. Lap Time Chart + Position Chart | v1.1 | 0/? | Not started | - |
 | 7. Interval History | v1.1 | 0/? | Not started | - |
 | 8. Sector Comparison Heatmap | v1.1 | 0/? | Not started | - |
