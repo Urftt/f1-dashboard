@@ -52,7 +52,10 @@ Plans:
   3. User can view a position chart showing all 20 drivers' positions over laps with P1 at the top (y-axis inverted)
   4. User can toggle individual drivers on/off in multi-driver charts to reduce visual noise
   5. SC and VSC periods appear as shaded regions on both the lap time chart and position chart
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 06-01-PLAN.md — DriverToggle, useLapTimeData hook with trend lines, and LapTimeChart component
+- [ ] 06-02-PLAN.md — usePositionData hook, PositionChart with hover highlighting, and Dashboard wiring
 
 ### Phase 7: Interval History
 **Goal**: Users can see how close each driver was to the car ahead on every lap, revealing DRS hunting phases and gap management
@@ -84,7 +87,7 @@ Plans:
 | 3. Standings Board | v1.0 | 2/2 | Complete | 2026-03-13 |
 | 4. Chart Enhancements | v1.0 | 2/2 | Complete | 2026-03-13 |
 | 5. Dashboard Layout + Stint Timeline | 2/2 | Complete   | 2026-03-13 | - |
-| 6. Lap Time Chart + Position Chart | v1.1 | 0/? | Not started | - |
+| 6. Lap Time Chart + Position Chart | v1.1 | 0/2 | Planned | - |
 | 7. Interval History | v1.1 | 0/? | Not started | - |
 | 8. Sector Comparison Heatmap | v1.1 | 0/? | Not started | - |
 
