@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Strategy & Analysis Dashboard
-status: in_progress
-stopped_at: Completed 06-01 DriverToggle + LapTimeChart
-last_updated: "2026-03-14T12:09:05Z"
+status: completed
+stopped_at: Completed 06-02 Position Chart
+last_updated: "2026-03-14T12:14:35.136Z"
 last_activity: 2026-03-14 — Completed 06-01 DriverToggle + LapTimeChart
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
   percent: 31
 ---
 
@@ -53,6 +53,8 @@ Key decisions carrying forward into v1.1 (including 06-01):
 - [Phase 06-01]: Per-point opacity array on scatter marker for outliers (0.3 dim) — single trace per driver, no separate outlier traces
 - [Phase 06-01]: makeLap test helpers must use 'key' in overrides (not ??) to allow explicit null values for LapTime etc
 - [Phase 06-01]: DriverToggle is shared infrastructure for Phase 6-8 multi-driver charts via visibleDrivers prop threading
+- [Phase 06-02]: Hover highlighting via React state fallback (hoveredTraceIndex) rather than Plotly.restyle — avoids race conditions with react-plotly.js reconciliation
+- [Phase 06-02]: buildSCShapes duplicated in usePositionData (not imported from useLapTimeData) — keeps hooks self-contained
 
 ### Pending Todos
 
@@ -64,6 +66,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-14T12:09:05Z
-Stopped at: Completed 06-01-PLAN.md
-Resume file: .planning/phases/06-lap-time-chart-position-chart/06-02-PLAN.md
+Last session: 2026-03-14T12:14:35.135Z
+Stopped at: Completed 06-02 Position Chart
+Resume file: None
