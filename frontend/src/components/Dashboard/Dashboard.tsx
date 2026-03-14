@@ -2,6 +2,9 @@ import { GapChart } from '@/components/GapChart/GapChart'
 import { DriverSelector } from '@/components/GapChart/DriverSelector'
 import { StandingsBoard } from '@/components/StandingsBoard/StandingsBoard'
 import { StintTimeline } from '@/components/StintTimeline/StintTimeline'
+import { DriverToggle } from '@/components/DriverToggle/DriverToggle'
+import { LapTimeChart } from '@/components/LapTimeChart/LapTimeChart'
+import { useVisibleDrivers } from '@/components/DriverToggle/useVisibleDrivers'
 import { useSessionStore } from '@/stores/sessionStore'
 
 /**
@@ -20,6 +23,7 @@ import { useSessionStore } from '@/stores/sessionStore'
 export function Dashboard() {
   // Active when the user has started playback or scrubbed past lap 1
   const isReplayActive = useSessionStore((s) => s.isPlaying || s.currentLap > 1)
+  const { visibleDrivers, toggleDriver } = useVisibleDrivers()
 
   return (
     <div className="space-y-6">
@@ -52,6 +56,16 @@ export function Dashboard() {
           {/* Stint Timeline card */}
           <div className="bg-card border border-border rounded-lg p-4">
             <StintTimeline />
+          </div>
+
+          {/* Driver Toggle card */}
+          <div className="bg-card border border-border rounded-lg p-4">
+            <DriverToggle visibleDrivers={visibleDrivers} onToggle={toggleDriver} />
+          </div>
+
+          {/* Lap Time Chart card */}
+          <div className="bg-card border border-border rounded-lg p-4">
+            <LapTimeChart visibleDrivers={visibleDrivers} />
           </div>
         </section>
       )}
