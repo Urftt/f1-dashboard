@@ -16,6 +16,7 @@ import type {
   GapChartData,
   StandingsBoardResponse,
 } from '../types';
+import type { SectorRow } from '../types/session';
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000';
 
@@ -90,6 +91,21 @@ export async function fetchStandings(
   return fetchJson<StandingsBoardResponse>(
     `/api/sessions/${encodeURIComponent(sessionKey)}/standings?lap=${lap}`
   );
+}
+
+/** Fetch per-driver per-lap sector times (lazy load for heatmap). */
+export async function fetchSectors(
+  year: number,
+  event: string,
+  sessionType: string
+): Promise<SectorRow[]> {
+  const params = new URLSearchParams({
+    year: String(year),
+    event,
+    session_type: sessionType,
+  });
+  return fetchJson<{ sectors: SectorRow[] }>(`/api/sessions/sectors?${params}`)
+    .then((data) => data.sectors);
 }
 
 /**

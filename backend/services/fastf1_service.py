@@ -292,6 +292,31 @@ def serialize_drivers(session: Any) -> list[dict]:
     return drivers
 
 
+def serialize_sectors(session) -> list[dict]:
+    """Extract per-driver per-lap sector times from a loaded FastF1 session.
+
+    Returns list of dicts: { driver, lapNumber, s1, s2, s3 }
+    where s1/s2/s3 are float seconds or None.
+    """
+    laps = session.laps
+    result = []
+    for _, row in laps.iterrows():
+        lap_number = row.get("LapNumber")
+        driver = row.get("Driver")
+        if lap_number is None or pd.isna(lap_number):
+            continue
+        if driver is None or pd.isna(driver):
+            continue
+        result.append({
+            "driver": str(driver),
+            "lapNumber": int(lap_number),
+            "s1": serialize_timedelta(row.get("Sector1Time")),
+            "s2": serialize_timedelta(row.get("Sector2Time")),
+            "s3": serialize_timedelta(row.get("Sector3Time")),
+        })
+    return result
+
+
 async def load_session_stream(
     year: int, event: str, session_type: str, app: Any
 ) -> AsyncIterable[ServerSentEvent]:

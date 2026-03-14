@@ -37,6 +37,14 @@ export interface SafetyCarPeriod {
   type: 'SC' | 'VSC' | 'RED'
 }
 
+export interface SectorRow {
+  driver: string
+  lapNumber: number
+  s1: number | null
+  s2: number | null
+  s3: number | null
+}
+
 export type LoadingStage = 'idle' | 'loading' | 'complete' | 'error'
 
 export type ReplaySpeed = 0.5 | 1 | 2 | 4
