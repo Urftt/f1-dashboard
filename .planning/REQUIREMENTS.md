@@ -15,7 +15,7 @@ Requirements for v1.1 Strategy & Analysis Dashboard. Each maps to roadmap phases
 
 ### Race Overview Charts
 
-- [ ] **RACE-01**: User can view a position chart showing all drivers' positions over laps (P1 at top)
+- [x] **RACE-01**: User can view a position chart showing all drivers' positions over laps (P1 at top)
 - [ ] **RACE-02**: User can view an interval history chart showing gap-to-car-ahead over laps with DRS window reference
 - [ ] **RACE-03**: User can view a sector comparison heatmap color-coded by relative pace (purple=session best, green=personal best)
 
@@ -62,7 +62,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STRAT-01 | Phase 5 | Complete |
 | STRAT-02 | Phase 6 | Complete |
 | STRAT-03 | Phase 6 | Complete |
-| RACE-01 | Phase 6 | Pending |
+| RACE-01 | Phase 6 | Complete |
 | RACE-02 | Phase 7 | Pending |
 | RACE-03 | Phase 8 | Pending |
 | ENHANCE-01 | Phase 5 | Complete |
