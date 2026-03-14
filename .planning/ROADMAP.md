@@ -23,7 +23,7 @@
 
 - [x] **Phase 5: Dashboard Layout + Stint Timeline** - Scrollable analysis section and first chart; establishes shared utilities and memoization pattern (completed 2026-03-13)
 - [x] **Phase 6: Lap Time Chart + Position Chart** - Per-driver pace and race order views with driver visibility toggle and SC shading (completed 2026-03-14)
-- [ ] **Phase 7: Interval History** - Gap-to-car-ahead chart showing DRS hunting phases, with spoiler-free progressive reveal
+- [x] **Phase 7: Interval History** - Gap-to-car-ahead chart showing DRS hunting phases, with spoiler-free progressive reveal (completed 2026-03-14)
 - [ ] **Phase 8: Sector Comparison Heatmap** - New backend endpoint and per-driver per-sector heatmap with delta coloring
 
 ## Phase Details
@@ -90,7 +90,7 @@ Plans:
 | 4. Chart Enhancements | v1.0 | 2/2 | Complete | 2026-03-13 |
 | 5. Dashboard Layout + Stint Timeline | 2/2 | Complete   | 2026-03-13 | - |
 | 6. Lap Time Chart + Position Chart | 2/2 | Complete   | 2026-03-14 | - |
-| 7. Interval History | v1.1 | 0/1 | Not started | - |
+| 7. Interval History | 1/1 | Complete   | 2026-03-14 | - |
 | 8. Sector Comparison Heatmap | v1.1 | 0/? | Not started | - |
 
 _Full v1.0 details archived to `.planning/milestones/v1.0-ROADMAP.md`_

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Strategy & Analysis Dashboard
 status: completed
-stopped_at: Phase 7 context gathered
-last_updated: "2026-03-14T12:38:23.975Z"
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-03-14T13:03:32.365Z"
 last_activity: 2026-03-14 — Completed 06-01 DriverToggle + LapTimeChart
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 5
   percent: 31
 ---
 
@@ -55,6 +55,8 @@ Key decisions carrying forward into v1.1 (including 06-01):
 - [Phase 06-01]: DriverToggle is shared infrastructure for Phase 6-8 multi-driver charts via visibleDrivers prop threading
 - [Phase 06-02]: Hover highlighting via React state fallback (hoveredTraceIndex) rather than Plotly.restyle — avoids race conditions with react-plotly.js reconciliation
 - [Phase 06-02]: buildSCShapes duplicated in usePositionData (not imported from useLapTimeData) — keeps hooks self-contained
+- [Phase 07-01]: buildTimeLookup returns Map<lapNumber, Map<position, time>> for O(1) car-ahead lookup
+- [Phase 07-01]: Two traces per driver (normal+dim) for pit/lap1 distinction; buildSCShapes duplicated in useIntervalData for self-contained hooks
 
 ### Pending Todos
 
@@ -66,6 +68,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-14T12:38:23.974Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-interval-history/07-CONTEXT.md
+Last session: 2026-03-14T13:03:32.363Z
+Stopped at: Completed 07-01-PLAN.md
+Resume file: None

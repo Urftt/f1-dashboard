@@ -16,7 +16,7 @@ Requirements for v1.1 Strategy & Analysis Dashboard. Each maps to roadmap phases
 ### Race Overview Charts
 
 - [x] **RACE-01**: User can view a position chart showing all drivers' positions over laps (P1 at top)
-- [ ] **RACE-02**: User can view an interval history chart showing gap-to-car-ahead over laps with DRS window reference
+- [x] **RACE-02**: User can view an interval history chart showing gap-to-car-ahead over laps with DRS window reference
 - [ ] **RACE-03**: User can view a sector comparison heatmap color-coded by relative pace (purple=session best, green=personal best)
 
 ### Cross-Chart Enhancements
@@ -24,7 +24,7 @@ Requirements for v1.1 Strategy & Analysis Dashboard. Each maps to roadmap phases
 - [x] **ENHANCE-01**: All charts show a replay cursor (vertical line) synced to the current replay lap
 - [x] **ENHANCE-02**: All time-series charts show SC/VSC period shading (reusing existing pattern)
 - [x] **ENHANCE-03**: Multi-driver charts have a driver visibility toggle to show/hide individual drivers
-- [ ] **ENHANCE-04**: All charts progressively reveal data up to current lap during replay (spoiler-free mode)
+- [x] **ENHANCE-04**: All charts progressively reveal data up to current lap during replay (spoiler-free mode)
 
 ### Dashboard Layout
 
@@ -63,12 +63,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STRAT-02 | Phase 6 | Complete |
 | STRAT-03 | Phase 6 | Complete |
 | RACE-01 | Phase 6 | Complete |
-| RACE-02 | Phase 7 | Pending |
+| RACE-02 | Phase 7 | Complete |
 | RACE-03 | Phase 8 | Pending |
 | ENHANCE-01 | Phase 5 | Complete |
 | ENHANCE-02 | Phase 6 | Complete |
 | ENHANCE-03 | Phase 6 | Complete |
-| ENHANCE-04 | Phase 7 | Pending |
+| ENHANCE-04 | Phase 7 | Complete |
 | LAYOUT-01 | Phase 5 | Complete |
 
 **Coverage:**
