@@ -87,7 +87,7 @@ Plans:
 | 3. Standings Board | v1.0 | 2/2 | Complete | 2026-03-13 |
 | 4. Chart Enhancements | v1.0 | 2/2 | Complete | 2026-03-13 |
 | 5. Dashboard Layout + Stint Timeline | 2/2 | Complete   | 2026-03-13 | - |
-| 6. Lap Time Chart + Position Chart | v1.1 | 0/2 | Planned | - |
+| 6. Lap Time Chart + Position Chart | 1/2 | In Progress|  | - |
 | 7. Interval History | v1.1 | 0/? | Not started | - |
 | 8. Sector Comparison Heatmap | v1.1 | 0/? | Not started | - |
 

@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Strategy & Analysis Dashboard
-status: completed
-stopped_at: Phase 6 context gathered
-last_updated: "2026-03-14T11:51:01.465Z"
-last_activity: 2026-03-14 — Completed 05-02 stint timeline visualization
+status: in_progress
+stopped_at: Completed 06-01 DriverToggle + LapTimeChart
+last_updated: "2026-03-14T12:09:05Z"
+last_activity: 2026-03-14 — Completed 06-01 DriverToggle + LapTimeChart
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 25
+  total_plans: 3
+  completed_plans: 3
+  percent: 31
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-13)
 
 **Core value:** Users can see the gap between any two drivers plotted over time — the single most missing piece of F1 broadcast data
-**Current focus:** Phase 5 — Dashboard Layout + Stint Timeline
+**Current focus:** Phase 6 — Lap Time Chart + Position Chart
 
 ## Current Position
 
-Phase: 5 of 8 (Dashboard Layout + Stint Timeline)
-Plan: 2 of 2 completed
-Status: Phase complete — ready for Phase 6
-Last activity: 2026-03-14 — Completed 05-02 stint timeline visualization
+Phase: 6 of 8 (Lap Time Chart + Position Chart)
+Plan: 1 of 2 completed
+Status: Plan 06-01 complete — ready for 06-02 position chart
+Last activity: 2026-03-14 — Completed 06-01 DriverToggle + LapTimeChart
 
-Progress: [██░░░░░░░░] 25%
+Progress: [███░░░░░░░] 31%
 
 ## Accumulated Context
 
@@ -38,7 +38,7 @@ Progress: [██░░░░░░░░] 25%
 
 Decisions logged in PROJECT.md Key Decisions table. Full history archived with v1.0.
 
-Key decisions carrying forward into v1.1:
+Key decisions carrying forward into v1.1 (including 06-01):
 - Memoize chart `data` on `[laps]` only; cursor shape reads `currentLap` separately — prevents jank with 5+ charts open
 - Use `scattergl` (not `scatter`) for position chart from the start — 20 traces require WebGL
 - Compute interval-to-car-ahead from `Time` + `Position` columns — `IntervalToPositionAhead` not in public FastF1 API
@@ -49,6 +49,10 @@ Key decisions carrying forward into v1.1:
 - [Phase 05-02]: StintTimeline height fixed at 500px to fit all 20 drivers at ~24px per row
 - [Phase 05-02]: Analysis section gated by isReplayActive (isPlaying || currentLap > 1) for spoiler-free UX
 - [Phase 05-02]: Analysis section layout is full-width below 5-col main grid; subsequent charts (phases 6-8) follow this pattern
+- [Phase 06-01]: Use scattergl (WebGL) for lap time scatter — 20 drivers x 60+ laps = 1200+ points requires WebGL
+- [Phase 06-01]: Per-point opacity array on scatter marker for outliers (0.3 dim) — single trace per driver, no separate outlier traces
+- [Phase 06-01]: makeLap test helpers must use 'key' in overrides (not ??) to allow explicit null values for LapTime etc
+- [Phase 06-01]: DriverToggle is shared infrastructure for Phase 6-8 multi-driver charts via visibleDrivers prop threading
 
 ### Pending Todos
 
@@ -60,6 +64,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-14T11:51:01.464Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-lap-time-chart-position-chart/06-CONTEXT.md
+Last session: 2026-03-14T12:09:05Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: .planning/phases/06-lap-time-chart-position-chart/06-02-PLAN.md
