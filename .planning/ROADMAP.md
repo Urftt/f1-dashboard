@@ -65,7 +65,9 @@ Plans:
   1. User can view an interval history chart showing each selected driver's gap-to-car-ahead across all laps, with a 1.0s DRS reference line
   2. During replay, the interval history chart only reveals laps up to the current replay lap — no future gaps are shown
   3. The replay cursor appears on the interval history chart synced to the current lap
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 07-01-PLAN.md — useIntervalData hook with interval computation, IntervalHistory component, and Dashboard wiring
 
 ### Phase 8: Sector Comparison Heatmap
 **Goal**: Users can see a per-driver per-sector time heatmap color-coded by relative pace, with purple marking session bests and green marking personal bests
@@ -88,7 +90,7 @@ Plans:
 | 4. Chart Enhancements | v1.0 | 2/2 | Complete | 2026-03-13 |
 | 5. Dashboard Layout + Stint Timeline | 2/2 | Complete   | 2026-03-13 | - |
 | 6. Lap Time Chart + Position Chart | 2/2 | Complete   | 2026-03-14 | - |
-| 7. Interval History | v1.1 | 0/? | Not started | - |
+| 7. Interval History | v1.1 | 0/1 | Not started | - |
 | 8. Sector Comparison Heatmap | v1.1 | 0/? | Not started | - |
 
 _Full v1.0 details archived to `.planning/milestones/v1.0-ROADMAP.md`_
