@@ -6,6 +6,7 @@ import { DriverToggle } from '@/components/DriverToggle/DriverToggle'
 import { LapTimeChart } from '@/components/LapTimeChart/LapTimeChart'
 import { PositionChart } from '@/components/PositionChart/PositionChart'
 import { IntervalHistory } from '@/components/IntervalHistory/IntervalHistory'
+import { SectorHeatmap } from '@/components/SectorHeatmap/SectorHeatmap'
 import { useVisibleDrivers } from '@/components/DriverToggle/useVisibleDrivers'
 import { useSessionStore } from '@/stores/sessionStore'
 
@@ -78,6 +79,11 @@ export function Dashboard() {
           {/* Interval History card */}
           <div className="bg-card border border-border rounded-lg p-4">
             <IntervalHistory visibleDrivers={visibleDrivers} />
+          </div>
+
+          {/* Sector Heatmap card */}
+          <div className="bg-card border border-border rounded-lg p-4">
+            <SectorHeatmap visibleDrivers={visibleDrivers} />
           </div>
         </section>
       )}
