@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Strategy & Analysis Dashboard
 status: completed
-stopped_at: Completed 07-01-PLAN.md
-last_updated: "2026-03-14T13:05:54.675Z"
-last_activity: 2026-03-14 — Completed 06-01 DriverToggle + LapTimeChart
+stopped_at: Completed 08-02-PLAN.md — Phase 8 complete, milestone v1.1 complete
+last_updated: "2026-03-15"
+last_activity: 2026-03-15 — Completed Phase 8 Sector Comparison Heatmap
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
-  percent: 31
+  completed_phases: 4
+  total_plans: 7
+  completed_plans: 7
+  percent: 100
 ---
 
 # Project State
@@ -21,42 +21,33 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-13)
 
 **Core value:** Users can see the gap between any two drivers plotted over time — the single most missing piece of F1 broadcast data
-**Current focus:** Phase 6 — Lap Time Chart + Position Chart
+**Current focus:** Milestone v1.1 complete — all analysis charts delivered
 
 ## Current Position
 
-Phase: 6 of 8 (Lap Time Chart + Position Chart)
-Plan: 1 of 2 completed
-Status: Plan 06-01 complete — ready for 06-02 position chart
-Last activity: 2026-03-14 — Completed 06-01 DriverToggle + LapTimeChart
+Phase: 8 of 8 (Sector Comparison Heatmap) — COMPLETE
+Plan: 2 of 2 completed
+Status: Milestone v1.1 complete — all 4 phases delivered
+Last activity: 2026-03-15 — Completed Phase 8 Sector Comparison Heatmap
 
-Progress: [███░░░░░░░] 31%
+Progress: [██████████] 100%
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions logged in PROJECT.md Key Decisions table. Full history archived with v1.0.
-
-Key decisions carrying forward into v1.1 (including 06-01):
-- Memoize chart `data` on `[laps]` only; cursor shape reads `currentLap` separately — prevents jank with 5+ charts open
-- Use `scattergl` (not `scatter`) for position chart from the start — 20 traces require WebGL
-- Compute interval-to-car-ahead from `Time` + `Position` columns — `IntervalToPositionAhead` not in public FastF1 API
-- Group stints by `Stint` integer (not compound) — FastF1 v3.6.0+ has `None` compound values that fragment groupings
-- [Phase 05-dashboard-layout-stint-timeline]: Group stints by Stint integer column (not Compound) to handle FastF1 None values
-- [Phase 05-dashboard-layout-stint-timeline]: Export pure functions from hooks for direct testability without React mocking
-- [Phase 05-dashboard-layout-stint-timeline]: Three-memo split in useStintData: allStints/[laps], chart data/[currentLap+], cursor/[currentLap]
-- [Phase 05-02]: StintTimeline height fixed at 500px to fit all 20 drivers at ~24px per row
-- [Phase 05-02]: Analysis section gated by isReplayActive (isPlaying || currentLap > 1) for spoiler-free UX
-- [Phase 05-02]: Analysis section layout is full-width below 5-col main grid; subsequent charts (phases 6-8) follow this pattern
-- [Phase 06-01]: Use scattergl (WebGL) for lap time scatter — 20 drivers x 60+ laps = 1200+ points requires WebGL
-- [Phase 06-01]: Per-point opacity array on scatter marker for outliers (0.3 dim) — single trace per driver, no separate outlier traces
-- [Phase 06-01]: makeLap test helpers must use 'key' in overrides (not ??) to allow explicit null values for LapTime etc
-- [Phase 06-01]: DriverToggle is shared infrastructure for Phase 6-8 multi-driver charts via visibleDrivers prop threading
-- [Phase 06-02]: Hover highlighting via React state fallback (hoveredTraceIndex) rather than Plotly.restyle — avoids race conditions with react-plotly.js reconciliation
-- [Phase 06-02]: buildSCShapes duplicated in usePositionData (not imported from useLapTimeData) — keeps hooks self-contained
-- [Phase 07-01]: buildTimeLookup returns Map<lapNumber, Map<position, time>> for O(1) car-ahead lookup
-- [Phase 07-01]: Two traces per driver (normal+dim) for pit/lap1 distinction; buildSCShapes duplicated in useIntervalData for self-contained hooks
+Key decisions carrying forward:
+- Memoize chart `data` on `[laps]` only; cursor shape reads `currentLap` separately
+- Use `scattergl` (not `scatter`) for position chart — 20 traces require WebGL
+- Compute interval-to-car-ahead from `Time` + `Position` columns
+- Group stints by `Stint` integer (not compound)
+- Export pure functions from hooks for direct testability
+- DriverToggle is shared infrastructure for Phase 6-8 multi-driver charts
+- Hooks are self-contained (no cross-component hook imports, but pure function imports OK)
+- [Phase 08]: Session best sentinel z=-1.0, personal best sentinel z=-0.5
+- [Phase 08]: Per-driver normalization with rolling bests for spoiler-free replay
+- [Phase 08]: Lazy sector endpoint reuses FastF1 disk cache (no SSE needed)
+- [Phase 08]: Horizontal scroll with fixed-width cells for heatmap (not responsive)
 
 ### Pending Todos
 
@@ -68,6 +59,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-14T13:03:32.363Z
-Stopped at: Completed 07-01-PLAN.md
+Last session: 2026-03-15
+Stopped at: Completed 08-02-PLAN.md — milestone v1.1 complete
 Resume file: None

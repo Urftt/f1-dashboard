@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 F1 Race Replay Dashboard** — Phases 1-4 (shipped 2026-03-13)
-- 🚧 **v1.1 Strategy & Analysis Dashboard** — Phases 5-8 (in progress)
+- ✅ **v1.1 Strategy & Analysis Dashboard** — Phases 5-8 (completed 2026-03-15)
 
 ## Phases
 
@@ -17,14 +17,14 @@
 
 </details>
 
-### 🚧 v1.1 Strategy & Analysis Dashboard (In Progress)
+### ✅ v1.1 Strategy & Analysis Dashboard (Completed 2026-03-15)
 
 **Milestone Goal:** Add five analysis views to the scrollable dashboard — stint timeline, lap time chart, position chart, sector comparison heatmap, and interval history — giving users deeper strategic insight into race data.
 
 - [x] **Phase 5: Dashboard Layout + Stint Timeline** - Scrollable analysis section and first chart; establishes shared utilities and memoization pattern (completed 2026-03-13)
 - [x] **Phase 6: Lap Time Chart + Position Chart** - Per-driver pace and race order views with driver visibility toggle and SC shading (completed 2026-03-14)
 - [x] **Phase 7: Interval History** - Gap-to-car-ahead chart showing DRS hunting phases, with spoiler-free progressive reveal (completed 2026-03-14)
-- [ ] **Phase 8: Sector Comparison Heatmap** - New backend endpoint and per-driver per-sector heatmap with delta coloring
+- [x] **Phase 8: Sector Comparison Heatmap** - New backend endpoint and per-driver per-sector heatmap with delta coloring (completed 2026-03-15)
 
 ## Phase Details
 
@@ -78,7 +78,10 @@ Plans:
   2. Cells are color-coded by delta to session best: purple for session fastest, green for driver's personal best, and gradient for relative pace
   3. Sector data loads lazily when the heatmap component mounts — the main session load is not slowed
   4. Missing sector data (outlaps, SC laps) appears as visually distinct empty cells rather than incorrect values
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [x] 08-01-PLAN.md — Backend sector endpoint, frontend pure functions (buildHeatmapData, buildLapCursorShapes), types, API client, and unit tests
+- [x] 08-02-PLAN.md — SectorHeatmap presentational component with Plotly heatmap, horizontal scroll, and Dashboard wiring
 
 ## Progress
 
@@ -91,6 +94,6 @@ Plans:
 | 5. Dashboard Layout + Stint Timeline | 2/2 | Complete   | 2026-03-13 | - |
 | 6. Lap Time Chart + Position Chart | 2/2 | Complete   | 2026-03-14 | - |
 | 7. Interval History | 1/1 | Complete   | 2026-03-14 | - |
-| 8. Sector Comparison Heatmap | v1.1 | 0/? | Not started | - |
+| 8. Sector Comparison Heatmap | v1.1 | 2/2 | Complete | 2026-03-15 |
 
 _Full v1.0 details archived to `.planning/milestones/v1.0-ROADMAP.md`_
