@@ -5,6 +5,7 @@ import { StintTimeline } from '@/components/StintTimeline/StintTimeline'
 import { DriverToggle } from '@/components/DriverToggle/DriverToggle'
 import { LapTimeChart } from '@/components/LapTimeChart/LapTimeChart'
 import { PositionChart } from '@/components/PositionChart/PositionChart'
+import { IntervalHistory } from '@/components/IntervalHistory/IntervalHistory'
 import { useVisibleDrivers } from '@/components/DriverToggle/useVisibleDrivers'
 import { useSessionStore } from '@/stores/sessionStore'
 
@@ -72,6 +73,11 @@ export function Dashboard() {
           {/* Position Chart card */}
           <div className="bg-card border border-border rounded-lg p-4">
             <PositionChart visibleDrivers={visibleDrivers} />
+          </div>
+
+          {/* Interval History card */}
+          <div className="bg-card border border-border rounded-lg p-4">
+            <IntervalHistory visibleDrivers={visibleDrivers} />
           </div>
         </section>
       )}
