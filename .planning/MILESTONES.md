@@ -1,5 +1,25 @@
 # Milestones
 
+## v1.1 Strategy & Analysis Dashboard (Shipped: 2026-03-15)
+
+**Phases:** 5-8 | **Plans:** 7 | **Files:** 59 changed | **Timeline:** 2026-03-14 → 2026-03-15
+**Git range:** feat(05-01) → feat(08-02)
+
+**Delivered:** Five analysis views added to a scrollable dashboard — stint timeline, lap time chart with degradation stats, position chart, interval history with DRS reference, and sector comparison heatmap — giving users deeper strategic insight into race data.
+
+**Key accomplishments:**
+1. Scrollable analysis dashboard with "Strategy & Analysis" section below gap chart
+2. Stint timeline showing all drivers' tire strategies with compound-colored bars
+3. Lap time chart with per-stint trend lines, slope/σ annotations, and std dev bands
+4. Position chart with hover highlighting and end-of-line driver labels
+5. Interval history showing gap-to-car-ahead with DRS threshold and SC/VSC shading
+6. Sector comparison heatmap with session/personal best color coding and SC exclusion toggle
+
+**Requirements:** 11/11 satisfied
+**Tech debt:** 7 items (Phase 8 missing verification docs, Nyquist drafts incomplete, hover tooltip minor gap)
+
+---
+
 ## v1.0 F1 Race Replay Dashboard (Shipped: 2026-03-13)
 
 **Phases:** 1-4 | **Plans:** 12 | **Commits:** 71 | **Timeline:** 2026-03-13

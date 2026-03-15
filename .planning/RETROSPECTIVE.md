@@ -43,6 +43,54 @@
 
 ---
 
+## Milestone: v1.1 — Strategy & Analysis Dashboard
+
+**Shipped:** 2026-03-15
+**Phases:** 4 | **Plans:** 7 | **Files:** 59 changed
+
+### What Was Built
+- Scrollable analysis dashboard with "Strategy & Analysis" section
+- Stint timeline with compound-colored bars for all 20 drivers
+- Lap time chart with per-stint trend lines, slope/σ annotations, std dev bands, and SC exclusion toggle
+- Position chart with hover highlighting, end-of-line labels, and SC/VSC shading
+- Interval history with DRS threshold, gap-to-car-ahead, and hover highlighting
+- Sector comparison heatmap with session/personal best color coding, cursor highlight, and SC exclusion toggle
+- Pit stop vertical lines on lap time chart
+- Progressive reveal (spoiler-free) across all charts
+
+### What Worked
+- Three-memo split pattern (data / visible / cursor) established in Phase 5 scaled perfectly to all 4 charts
+- Pure function exports from hooks enabled 162 tests without mocking React
+- Cross-phase reuse worked well: `makeReplayCursorShape` (Ph5) used by all charts, `computeDriverOrder` (Ph5) reused by sector heatmap (Ph8)
+- Post-milestone bugfixes (GapChart spoiler, process.env, SC restart laps) were caught during manual UAT
+
+### What Was Inefficient
+- Phase 8 was executed without formal PLAN.md files — skipped the plan → execute loop
+- Phase 8 SUMMARY frontmatter didn't list RACE-03 in requirements_completed
+- No VERIFICATION.md for Phase 8 — had to infer satisfaction from code inspection
+- Nyquist validation drafts created for phases 5-7 but never completed (all `nyquist_compliant: false`)
+- `buildSCShapes` duplicated in 3 files (intentional decision but still debt)
+
+### Patterns Established
+- Toggle switch UI pattern for SC/VSC exclusion (reusable across charts)
+- Slope annotation on trend lines: `±Nms/lap` + `σ Nms` for degradation comparison
+- Standard deviation bands around regression lines for consistency visualization
+- Restart lap (lap after SC/VSC) treated as outlier alongside SC laps themselves
+- `hexToRgba` helper for Plotly fill colors with proper alpha control
+
+### Key Lessons
+1. Always check progressive reveal on ALL chart data — the GapChart spoiler bug was missed because only annotations were filtered by currentLap, not the line data
+2. `process.env` doesn't exist in Vite — use `import.meta.env` (caught as runtime crash, not build error)
+3. Pre-computing trend lines on full data then clamping visually still leaks information (slope values) — compute from revealed data only
+4. Phase 8 skipping formal plans led to documentation gaps that the audit caught — the plan step has value even for "simple" phases
+
+### Cost Observations
+- Model mix: balanced profile (sonnet for agents, opus for execution)
+- Sessions: ~4 (layout+stint, charts, interval, sector + manual UAT)
+- Notable: Entire milestone completed in 2 days. Post-milestone bugfix session added significant value (spoiler fixes, chart titles, degradation stats)
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -50,7 +98,10 @@
 | Milestone | Commits | Phases | Key Change |
 |-----------|---------|--------|------------|
 | v1.0 | 71 | 4 | Initial process — established GSD workflow with research → plan → execute → verify |
+| v1.1 | ~15 | 4 | Scaled chart pattern; post-milestone UAT caught spoiler bugs |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. (First milestone — lessons to be verified in future milestones)
+1. Always update ROADMAP.md checkboxes and REQUIREMENTS.md status — audit relies on these (v1.0, v1.1)
+2. FastF1/Plotly type boundaries need explicit serialization — CJS interop, numpy types, process.env (v1.0, v1.1)
+3. Skipping formal plans leads to documentation gaps that audits catch — the plan step has value (v1.1)

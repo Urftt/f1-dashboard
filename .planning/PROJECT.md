@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A personal F1 race replay dashboard — a second-screen companion for watching Formula 1 races. It loads historical session data via FastF1, renders interactive driver gap charts with pit stop annotations and safety car shading, and replays sessions lap-by-lap with a synchronized standings board.
+A personal F1 race replay dashboard — a second-screen companion for watching Formula 1 races. It loads historical session data via FastF1, renders interactive driver gap charts, strategy analysis charts, and replays sessions lap-by-lap with a synchronized standings board and full analysis suite.
 
 ## Core Value
 
@@ -19,14 +19,20 @@ Users can see the gap between any two drivers plotted over time — the single m
 - ✓ Navigate to any lap during replay to inspect that moment — v1.0
 - ✓ Pit stop annotations on gap chart — v1.0
 - ✓ Safety car/VSC shading on gap chart — v1.0
+- ✓ Stint timeline with compound-colored bars — v1.1
+- ✓ Lap time chart with degradation trend lines — v1.1
+- ✓ Position chart with hover highlighting — v1.1
+- ✓ Sector comparison heatmap with relative pace coloring — v1.1
+- ✓ Interval history with DRS threshold reference — v1.1
+- ✓ Replay cursor synced across all charts — v1.1
+- ✓ SC/VSC shading on all time-series charts — v1.1
+- ✓ Driver visibility toggle for multi-driver charts — v1.1
+- ✓ Progressive reveal / spoiler-free mode — v1.1
+- ✓ Scrollable analysis dashboard layout — v1.1
 
 ### Active
 
-- [ ] Stint timeline — horizontal bars showing each driver's tire stints (compound, length, pit laps)
-- [ ] Lap time chart — multi-driver selectable lap time plot showing degradation, stint pace, strategy
-- [ ] Position chart — all-driver position over laps (spaghetti chart) showing overtakes and strategy
-- [ ] Sector comparison heatmap — multi-driver lap-by-sector grid, color-coded by relative pace
-- [ ] Interval history — gap-to-car-ahead over time, showing hunting vs. managing phases
+(None — define in next milestone)
 
 ### Out of Scope
 
@@ -37,28 +43,19 @@ Users can see the gap between any two drivers plotted over time — the single m
 - Multi-user / deployment — personal local tool
 - Animated track position map — FastF1 positional data resolution too low
 - Qualifying/Sprint gap charts — gap semantics differ from races
+- Fuel-corrected lap times — fuel load/burn rate not available via FastF1
+- Qualifying sector heatmap — different session structure; race heatmap first
 
 ## Context
 
-Shipped v1.0 with ~2,000 LOC TypeScript/React frontend and Python/FastAPI backend.
-Tech stack: React 19, Vite 8, Tailwind CSS v4, Zustand, Plotly.js, FastAPI, FastF1, Pydantic.
-All 18 v1 requirements satisfied. 4 minor tech debt items (non-blocking).
-
-## Current Milestone: v1.1 Strategy & Analysis Dashboard
-
-**Goal:** Add five new analysis views to the scrollable dashboard — stint timeline, lap time chart, position chart, sector comparison heatmap, and interval history — giving users deeper strategic insight into race data.
-
-**Target features:**
-- Stint timeline (tire strategy overview)
-- Lap time chart (degradation & stint pace)
-- Position chart (spaghetti chart)
-- Sector comparison heatmap
-- Interval history
+Shipped v1.1 with ~12,000 LOC TypeScript/React frontend and Python/FastAPI backend.
+Tech stack: React 19, Vite 8, Tailwind CSS v4, Zustand, Plotly.js (with WebGL scattergl), FastAPI, FastF1, Pydantic.
+All 29 requirements satisfied across v1.0 + v1.1. 7 minor tech debt items from v1.1.
 
 ## Constraints
 
 - **Tech stack**: React + TypeScript frontend, FastAPI + Python backend, FastF1 for data, Plotly for charts
-- **Data source**: FastF1 historical data only for v1 (live data in future milestone)
+- **Data source**: FastF1 historical data only (live data in future milestone)
 - **Platform**: Runs locally on macOS, accessed via browser
 - **Python**: 3.12+
 
@@ -73,7 +70,10 @@ All 18 v1 requirements satisfied. 4 minor tech debt items (non-blocking).
 | SSE for session loading | Stream progress updates during FastF1 fetch | ✓ Good — real-time progress bar, no polling needed |
 | Gap via session Time not LapTime | Avoids cumulative errors from safety cars and pit stops | ✓ Good — accurate gap calculation |
 | Dynamic driver/team data from FastF1 | No hardcoded lookup tables | ✓ Good — works across all seasons automatically |
-| HTML range input for scrubber | Simpler than component library slider for integer lap steps | ✓ Good — sufficient, no extra dependency |
+| Memoize chart data on [laps] only; cursor reads currentLap separately | Prevents full chart recompute on every replay tick | ✓ Good — smooth replay performance with 6 charts |
+| Export pure functions from hooks for testability | Direct unit testing without mocking React | ✓ Good — 162 tests, fast and reliable |
+| Self-contained hooks (no cross-hook imports) | Avoids coupling; pure function imports OK | ✓ Good — each chart is independently maintainable |
+| WebGL scattergl for multi-driver charts | 20-driver traces need GPU rendering | ✓ Good — no performance issues |
 
 ---
-*Last updated: 2026-03-13 after v1.1 milestone start*
+*Last updated: 2026-03-15 after v1.1 milestone completion*
