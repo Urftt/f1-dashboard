@@ -74,9 +74,9 @@ export function useGapData(): GapDataResult {
       mapB.set(l.LapNumber as number, l.Time as number)
     }
 
-    // Shared laps sorted ascending
+    // Shared laps sorted ascending, filtered to currentLap for progressive reveal
     const sharedLaps = [...mapA.keys()]
-      .filter((lap) => mapB.has(lap))
+      .filter((lap) => mapB.has(lap) && lap <= currentLap)
       .sort((a, b) => a - b)
 
     if (sharedLaps.length === 0) return emptySegments
@@ -138,7 +138,7 @@ export function useGapData(): GapDataResult {
     }
 
     return { lapNumbers, gaps, segments }
-  }, [laps, drivers, selectedDrivers])
+  }, [laps, drivers, selectedDrivers, currentLap])
 
   const annotationShapes = useMemo(() => {
     const emptyAnnotations = {
