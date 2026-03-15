@@ -183,16 +183,16 @@ describe('computeAllTrendLines', () => {
   ]
 
   it('returns one trend line per driver-stint', () => {
-    const trendLines = computeAllTrendLines(laps, drivers, scPeriods)
-    const verLines = trendLines.filter((t) => (t as any).name === 'VER trend')
+    const { trendTraces } = computeAllTrendLines(laps, drivers, scPeriods)
+    const verLines = trendTraces.filter((t) => (t as any).name === 'VER trend')
     expect(verLines.length).toBe(2)
   })
 
   it('excludes outlier laps from regression input', () => {
     // Lap 11 has PitInTime so it's an outlier — should be excluded
     // This is implicitly tested by the trend lines being computed correctly
-    const trendLines = computeAllTrendLines(laps, drivers, scPeriods)
-    expect(trendLines.length).toBeGreaterThan(0)
+    const { trendTraces } = computeAllTrendLines(laps, drivers, scPeriods)
+    expect(trendTraces.length).toBeGreaterThan(0)
   })
 
   it('returns null for stints with fewer than 2 clean laps', () => {
@@ -202,8 +202,8 @@ describe('computeAllTrendLines', () => {
       // pit in immediately: only 1 clean lap
       makeLap({ Driver: 'VER', LapNumber: 6, LapTime: 110, Stint: 1, PitInTime: 50 }),
     ]
-    const trendLines = computeAllTrendLines(fewLaps, drivers, scPeriods)
-    expect(trendLines.length).toBe(0)
+    const { trendTraces } = computeAllTrendLines(fewLaps, drivers, scPeriods)
+    expect(trendTraces.length).toBe(0)
   })
 })
 

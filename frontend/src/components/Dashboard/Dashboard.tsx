@@ -58,6 +58,7 @@ export function Dashboard() {
 
           {/* Stint Timeline card */}
           <div className="bg-card border border-border rounded-lg p-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Stint Timeline</h3>
             <StintTimeline />
           </div>
 
@@ -73,16 +74,19 @@ export function Dashboard() {
 
           {/* Position Chart card */}
           <div className="bg-card border border-border rounded-lg p-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Race Position</h3>
             <PositionChart visibleDrivers={visibleDrivers} />
           </div>
 
           {/* Interval History card */}
           <div className="bg-card border border-border rounded-lg p-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Interval to Car Ahead</h3>
             <IntervalHistory visibleDrivers={visibleDrivers} />
           </div>
 
           {/* Sector Heatmap card */}
           <div className="bg-card border border-border rounded-lg p-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Sector Times</h3>
             <SectorHeatmap visibleDrivers={visibleDrivers} />
           </div>
         </section>
