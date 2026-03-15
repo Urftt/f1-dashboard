@@ -42,7 +42,7 @@ function ToggleSwitch({ checked, onChange, label }: { checked: boolean; onChange
  */
 export function LapTimeChart({ visibleDrivers }: LapTimeChartProps) {
   const [excludeSCFromScale, setExcludeSCFromScale] = useState(true)
-  const { scatterTraces, trendTraces, stdDevTraces, slopeAnnotations, scShapes, cursorShapes, cleanYRange } =
+  const { scatterTraces, trendTraces, stdDevTraces, slopeAnnotations, scShapes, pitStopShapes, cursorShapes, cleanYRange } =
     useLapTimeData(visibleDrivers)
 
   const yaxis: Partial<Plotly.LayoutAxis> = {
@@ -67,7 +67,7 @@ export function LapTimeChart({ visibleDrivers }: LapTimeChartProps) {
       color: '#e0e0f0',
     },
     yaxis,
-    shapes: [...scShapes, ...cursorShapes].filter(Boolean),
+    shapes: [...scShapes, ...pitStopShapes, ...cursorShapes].filter(Boolean),
     annotations: slopeAnnotations as Plotly.Annotations[],
     showlegend: false,
     hovermode: 'closest',

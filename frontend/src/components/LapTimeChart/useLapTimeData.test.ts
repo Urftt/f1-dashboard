@@ -91,9 +91,15 @@ describe('isOutlierLap', () => {
     expect(isOutlierLap(lap, noSCPeriods)).toBe(false)
   })
 
-  it('returns false for a lap just outside SC period', () => {
+  it('returns true for the restart lap immediately after SC period', () => {
     const scPeriods: SafetyCarPeriod[] = [{ start_lap: 5, end_lap: 8, type: 'SC' }]
     const lap = makeLap({ Driver: 'VER', LapNumber: 9, LapTime: 90 })
+    expect(isOutlierLap(lap, scPeriods)).toBe(true)
+  })
+
+  it('returns false for the second lap after SC period', () => {
+    const scPeriods: SafetyCarPeriod[] = [{ start_lap: 5, end_lap: 8, type: 'SC' }]
+    const lap = makeLap({ Driver: 'VER', LapNumber: 10, LapTime: 90 })
     expect(isOutlierLap(lap, scPeriods)).toBe(false)
   })
 })

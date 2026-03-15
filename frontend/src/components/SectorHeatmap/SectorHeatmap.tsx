@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import _Plot from 'react-plotly.js'
 // react-plotly.js is CJS — Vite interop may double-wrap the default export
 const Plot = (typeof (_Plot as any).default === 'function' ? (_Plot as any).default : _Plot) as typeof _Plot
@@ -5,6 +6,28 @@ import { useSectorData } from './useSectorData'
 
 interface SectorHeatmapProps {
   visibleDrivers: Set<string>
+}
+
+function ToggleSwitch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+      <button
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors ${
+          checked ? 'bg-white/30' : 'bg-white/10'
+        }`}
+      >
+        <span
+          className={`inline-block h-3 w-3 rounded-full bg-white transition-transform ${
+            checked ? 'translate-x-3.5' : 'translate-x-0.5'
+          }`}
+        />
+      </button>
+      {label}
+    </label>
+  )
 }
 
 const SECTOR_COLORSCALE: [number, string][] = [
@@ -30,9 +53,11 @@ const CELL_WIDTH = 10
  * - Current lap highlighted with white border rectangle
  * - Loading spinner while sector data fetches
  * - Driver rows ordered by race position at currentLap
+ * - Toggle to exclude SC/VSC laps from color normalization
  */
 export function SectorHeatmap({ visibleDrivers }: SectorHeatmapProps) {
-  const { loading, error, heatmapResult, cursorShapes } = useSectorData(visibleDrivers)
+  const [excludeSC, setExcludeSC] = useState(true)
+  const { loading, error, heatmapResult, cursorShapes } = useSectorData(visibleDrivers, excludeSC)
 
   if (loading) {
     return (
@@ -109,13 +134,23 @@ export function SectorHeatmap({ visibleDrivers }: SectorHeatmapProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Sector Times</h3>
+        <ToggleSwitch
+          checked={excludeSC}
+          onChange={setExcludeSC}
+          label="Exclude SC/VSC from colors"
+        />
+      </div>
+      <div className="overflow-x-auto">
       <Plot
         data={data}
         layout={layout}
         config={{ responsive: false, displayModeBar: false }}
         style={{ width: `${chartWidth}px`, height: `${chartHeight}px` }}
       />
+      </div>
     </div>
   )
 }

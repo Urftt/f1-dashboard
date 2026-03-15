@@ -50,6 +50,7 @@ export function linearRegression(
  * - Lap has PitInTime (pit-in lap)
  * - Lap has PitOutTime (pit-out lap)
  * - Lap falls within a SC/VSC/RED period
+ * - Lap immediately after a SC/VSC/RED period (restart lap is still slow)
  */
 export function isOutlierLap(lap: LapRow, safetyCarPeriods: SafetyCarPeriod[]): boolean {
   if (lap.LapNumber === 1) return true
@@ -57,8 +58,11 @@ export function isOutlierLap(lap: LapRow, safetyCarPeriods: SafetyCarPeriod[]): 
   if (lap.PitOutTime !== null) return true
 
   for (const period of safetyCarPeriods) {
-    if (lap.LapNumber !== null && lap.LapNumber >= period.start_lap && lap.LapNumber <= period.end_lap) {
-      return true
+    if (lap.LapNumber !== null) {
+      // During SC/VSC/RED
+      if (lap.LapNumber >= period.start_lap && lap.LapNumber <= period.end_lap) return true
+      // First lap after SC/VSC/RED (restart lap)
+      if (lap.LapNumber === period.end_lap + 1) return true
     }
   }
 
@@ -325,6 +329,56 @@ export function computeAllTrendLines(
   return { trendTraces, stdDevTraces, stintInfos }
 }
 
+/**
+ * Builds vertical pit stop line shapes for visible drivers.
+ * Progressive reveal: only shows pit stops up to currentLap.
+ */
+export function buildPitStopShapes(
+  laps: LapRow[],
+  drivers: DriverInfo[],
+  visibleDrivers: Set<string>,
+  currentLap: number
+): Partial<Plotly.Shape>[] {
+  const driverMap = new Map(drivers.map((d) => [d.abbreviation, d]))
+  const shapes: Partial<Plotly.Shape>[] = []
+
+  for (const driverAbbr of visibleDrivers) {
+    const color = driverMap.get(driverAbbr)?.teamColor ?? '#888888'
+    const pitLaps = laps
+      .filter(
+        (l) =>
+          l.Driver === driverAbbr &&
+          l.LapNumber !== null &&
+          l.PitInTime !== null &&
+          l.LapNumber <= currentLap
+      )
+      .map((l) => l.LapNumber as number)
+
+    for (const pitLap of pitLaps) {
+      shapes.push({
+        type: 'line',
+        x0: pitLap,
+        x1: pitLap,
+        y0: 0,
+        y1: 1,
+        xref: 'x',
+        yref: 'paper' as const,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        layer: 'above' as any,
+        line: { color, width: 1, dash: 'solid' as const },
+        label: {
+          text: driverAbbr,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          textposition: 'top left' as any,
+          font: { color, size: 9 },
+        },
+      })
+    }
+  }
+
+  return shapes
+}
+
 // ---- React hook ----
 
 export function useLapTimeData(visibleDrivers: Set<string>) {
@@ -334,7 +388,7 @@ export function useLapTimeData(visibleDrivers: Set<string>) {
   const safetyCarPeriods = useSessionStore((s) => s.safetyCarPeriods)
 
   // Memo 1: build all visible traces, trend lines, and annotations for current lap
-  const { scatterTraces, trendTraces, stdDevTraces, slopeAnnotations, scShapes, cleanYRange } = useMemo(() => {
+  const { scatterTraces, trendTraces, stdDevTraces, slopeAnnotations, scShapes, pitStopShapes, cleanYRange } = useMemo(() => {
     const scatterTraces = buildLapTimeTraces(laps, drivers, safetyCarPeriods, visibleDrivers, currentLap)
 
     // Compute y-axis range from clean (non-outlier) laps only
@@ -394,8 +448,9 @@ export function useLapTimeData(visibleDrivers: Set<string>) {
       })
 
     const scShapes = buildSCShapes(safetyCarPeriods, currentLap)
+    const pitStopShapes = buildPitStopShapes(laps, drivers, visibleDrivers, currentLap)
 
-    return { scatterTraces, trendTraces, stdDevTraces, slopeAnnotations, scShapes, cleanYRange }
+    return { scatterTraces, trendTraces, stdDevTraces, slopeAnnotations, scShapes, pitStopShapes, cleanYRange }
   }, [laps, drivers, safetyCarPeriods, visibleDrivers, currentLap])
 
   // Memo 3: cursor shape — only depends on currentLap
@@ -404,5 +459,5 @@ export function useLapTimeData(visibleDrivers: Set<string>) {
     return shape ? [shape] : []
   }, [currentLap])
 
-  return { scatterTraces, trendTraces, stdDevTraces, slopeAnnotations, scShapes, cursorShapes, cleanYRange }
+  return { scatterTraces, trendTraces, stdDevTraces, slopeAnnotations, scShapes, pitStopShapes, cursorShapes, cleanYRange }
 }

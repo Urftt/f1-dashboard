@@ -86,7 +86,6 @@ export function Dashboard() {
 
           {/* Sector Heatmap card */}
           <div className="bg-card border border-border rounded-lg p-4">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Sector Times</h3>
             <SectorHeatmap visibleDrivers={visibleDrivers} />
           </div>
         </section>

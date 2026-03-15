@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import type Plotly from 'plotly.js'
-import type { LapRow, DriverInfo, SectorRow } from '@/types/session'
+import type { LapRow, DriverInfo, SectorRow, SafetyCarPeriod } from '@/types/session'
 import { useSessionStore } from '@/stores/sessionStore'
 import { computeDriverOrder } from '@/components/StintTimeline/useStintData'
 import { fetchSectors } from '@/api/client'
@@ -45,15 +45,37 @@ function buildSectorLookup(rows: SectorRow[]): Map<string, SectorRow> {
  * Build the set of excluded lap keys ("driver::lapNumber") for laps that
  * should not contribute to worst-clean calculation.
  * Excluded: PitInTime !== null, PitOutTime !== null, or LapNumber === 1.
+ * When excludeSC is true, also excludes SC/VSC/RED laps and restart laps.
  */
-function buildExcludedLapSet(laps: LapRow[], currentLap: number): Set<string> {
+export function buildExcludedLapSet(
+  laps: LapRow[],
+  currentLap: number,
+  safetyCarPeriods: SafetyCarPeriod[] = [],
+  excludeSC: boolean = false
+): Set<string> {
   const excluded = new Set<string>()
   for (const lap of laps) {
-    if (
-      lap.LapNumber !== null &&
-      lap.LapNumber <= currentLap &&
-      (lap.PitInTime !== null || lap.PitOutTime !== null || lap.LapNumber === 1)
-    ) {
+    if (lap.LapNumber === null || lap.LapNumber > currentLap) continue
+
+    const isBasicOutlier =
+      lap.PitInTime !== null || lap.PitOutTime !== null || lap.LapNumber === 1
+
+    let isSCOutlier = false
+    if (excludeSC) {
+      for (const period of safetyCarPeriods) {
+        if (lap.LapNumber >= period.start_lap && lap.LapNumber <= period.end_lap) {
+          isSCOutlier = true
+          break
+        }
+        // Restart lap
+        if (lap.LapNumber === period.end_lap + 1) {
+          isSCOutlier = true
+          break
+        }
+      }
+    }
+
+    if (isBasicOutlier || isSCOutlier) {
       excluded.add(`${lap.Driver}::${lap.LapNumber}`)
     }
   }
@@ -74,7 +96,9 @@ export function buildHeatmapData(
   laps: LapRow[],
   drivers: DriverInfo[],
   visibleDrivers: Set<string>,
-  currentLap: number
+  currentLap: number,
+  safetyCarPeriods: SafetyCarPeriod[] = [],
+  excludeSC: boolean = false
 ): HeatmapResult {
   // 1. Get driver order filtered to visible drivers
   const allOrder = computeDriverOrder(laps, drivers, currentLap)
@@ -98,7 +122,7 @@ export function buildHeatmapData(
   }
 
   // 4. Build excluded lap set
-  const excludedLaps = buildExcludedLapSet(laps, currentLap)
+  const excludedLaps = buildExcludedLapSet(laps, currentLap, safetyCarPeriods, excludeSC)
 
   // 5. Visible driver set for session-best computation
   const visibleDriverSet = new Set(driverOrder.map((e) => e.driver))
@@ -264,13 +288,14 @@ export function buildLapCursorShapes(
 
 // ---- React hook ----
 
-export function useSectorData(visibleDrivers: Set<string>) {
+export function useSectorData(visibleDrivers: Set<string>, excludeSC: boolean = false) {
   const year = useSessionStore((s) => s.year)
   const event = useSessionStore((s) => s.event)
   const sessionType = useSessionStore((s) => s.sessionType)
   const laps = useSessionStore((s) => s.laps)
   const drivers = useSessionStore((s) => s.drivers)
   const currentLap = useSessionStore((s) => s.currentLap)
+  const safetyCarPeriods = useSessionStore((s) => s.safetyCarPeriods)
 
   const [sectorRows, setSectorRows] = useState<SectorRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -298,8 +323,8 @@ export function useSectorData(visibleDrivers: Set<string>) {
   // Memo 1: heatmap data — recomputed when sector data or visible state changes
   const heatmapResult = useMemo(() => {
     if (sectorRows.length === 0) return null
-    return buildHeatmapData(sectorRows, laps, drivers, visibleDrivers, currentLap)
-  }, [sectorRows, laps, drivers, visibleDrivers, currentLap])
+    return buildHeatmapData(sectorRows, laps, drivers, visibleDrivers, currentLap, safetyCarPeriods, excludeSC)
+  }, [sectorRows, laps, drivers, visibleDrivers, currentLap, safetyCarPeriods, excludeSC])
 
   // Memo 2: cursor shapes — only depends on currentLap and heatmap dimensions
   const cursorShapes = useMemo(() => {
