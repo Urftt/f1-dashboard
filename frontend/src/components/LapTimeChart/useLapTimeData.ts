@@ -216,7 +216,8 @@ export interface StintTrendInfo {
 export function computeAllTrendLines(
   laps: LapRow[],
   drivers: DriverInfo[],
-  safetyCarPeriods: SafetyCarPeriod[]
+  safetyCarPeriods: SafetyCarPeriod[],
+  currentLap: number = Infinity
 ): { trendTraces: Partial<Plotly.PlotData>[]; stdDevTraces: Partial<Plotly.PlotData>[]; stintInfos: StintTrendInfo[] } {
   const driverMap = new Map(drivers.map((d) => [d.abbreviation, d]))
   const trendTraces: Partial<Plotly.PlotData>[] = []
@@ -241,8 +242,10 @@ export function computeAllTrendLines(
     const driverInfo = driverMap.get(driverAbbr)
     const color = driverInfo?.teamColor ?? '#888888'
 
-    // Filter to clean laps only
-    const cleanLaps = stintLaps.filter((l) => !isOutlierLap(l, safetyCarPeriods))
+    // Filter to clean laps up to currentLap only (no spoilers)
+    const cleanLaps = stintLaps.filter(
+      (l) => !isOutlierLap(l, safetyCarPeriods) && l.LapNumber !== null && l.LapNumber <= currentLap
+    )
 
     if (cleanLaps.length < 2) continue
 
@@ -330,13 +333,7 @@ export function useLapTimeData(visibleDrivers: Set<string>) {
   const currentLap = useSessionStore((s) => s.currentLap)
   const safetyCarPeriods = useSessionStore((s) => s.safetyCarPeriods)
 
-  // Memo 1: compute all trend data — stable on [laps, drivers, safetyCarPeriods]
-  const allTrendData = useMemo(
-    () => computeAllTrendLines(laps, drivers, safetyCarPeriods),
-    [laps, drivers, safetyCarPeriods]
-  )
-
-  // Memo 2: build visible traces for current lap and visible drivers
+  // Memo 1: build all visible traces, trend lines, and annotations for current lap
   const { scatterTraces, trendTraces, stdDevTraces, slopeAnnotations, scShapes, cleanYRange } = useMemo(() => {
     const scatterTraces = buildLapTimeTraces(laps, drivers, safetyCarPeriods, visibleDrivers, currentLap)
 
@@ -360,52 +357,26 @@ export function useLapTimeData(visibleDrivers: Set<string>) {
     }
     const cleanYRange = cleanMin <= cleanMax ? { min: cleanMin, max: cleanMax } : null
 
-    // Helper to clamp a trace to currentLap
-    const clampTrace = (t: Partial<Plotly.PlotData>): Partial<Plotly.PlotData> => {
-      const xs = t.x as number[]
-      const ys = t.y as number[]
-      if (xs[xs.length - 1] <= currentLap) return t
-      // For 2-point trend lines, recompute endpoint
-      if (xs.length === 2) {
-        const slope = (ys[1] - ys[0]) / (xs[1] - xs[0])
-        const intercept = ys[0] - slope * xs[0]
-        return { ...t, x: [xs[0], currentLap], y: [ys[0], slope * currentLap + intercept] }
-      }
-      // For multi-point bands, filter points
-      const newX: number[] = []
-      const newY: number[] = []
-      for (let i = 0; i < xs.length; i++) {
-        if (xs[i] <= currentLap) { newX.push(xs[i]); newY.push(ys[i]) }
-      }
-      return { ...t, x: newX, y: newY }
-    }
+    // Compute trend lines from laps up to currentLap only (no spoilers)
+    const trendData = computeAllTrendLines(laps, drivers, safetyCarPeriods, currentLap)
 
+    // Filter to visible drivers
     const isVisible = (name: string) => {
       const driver = name.replace(/ trend$/, '').replace(/ std[+-]$/, '')
       return visibleDrivers.has(driver)
     }
 
-    const startedByCurrent = (t: Partial<Plotly.PlotData>) => {
-      const xs = t.x as number[]
-      return xs[0] <= currentLap
-    }
+    const trendTraces = trendData.trendTraces
+      .filter((t) => isVisible((t as any).name))
 
-    // Filter and clamp trend lines
-    const trendTraces = allTrendData.trendTraces
-      .filter((t) => isVisible((t as any).name) && startedByCurrent(t))
-      .map(clampTrace)
-
-    // Filter and clamp std dev bands
-    const stdDevTraces = allTrendData.stdDevTraces
-      .filter((t) => isVisible((t as any).name) && startedByCurrent(t))
-      .map(clampTrace)
+    const stdDevTraces = trendData.stdDevTraces
+      .filter((t) => isVisible((t as any).name))
 
     // Build slope annotations — placed at midpoint of each visible trend line
-    const slopeAnnotations: Partial<Plotly.Annotations>[] = allTrendData.stintInfos
-      .filter((info) => visibleDrivers.has(info.driver) && info.startLap <= currentLap)
+    const slopeAnnotations: Partial<Plotly.Annotations>[] = trendData.stintInfos
+      .filter((info) => visibleDrivers.has(info.driver))
       .map((info) => {
-        const endLap = Math.min(info.endLap, currentLap)
-        const midLap = Math.round((info.startLap + endLap) / 2)
+        const midLap = Math.round((info.startLap + info.endLap) / 2)
         const yMid = info.slope * midLap + info.intercept
         const sign = info.slope >= 0 ? '+' : ''
         const slopeText = `${sign}${(info.slope * 1000).toFixed(0)}ms/lap`
@@ -425,7 +396,7 @@ export function useLapTimeData(visibleDrivers: Set<string>) {
     const scShapes = buildSCShapes(safetyCarPeriods, currentLap)
 
     return { scatterTraces, trendTraces, stdDevTraces, slopeAnnotations, scShapes, cleanYRange }
-  }, [laps, drivers, safetyCarPeriods, visibleDrivers, currentLap, allTrendData])
+  }, [laps, drivers, safetyCarPeriods, visibleDrivers, currentLap])
 
   // Memo 3: cursor shape — only depends on currentLap
   const cursorShapes = useMemo(() => {
